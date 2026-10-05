@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Luftfeuchtigkeit und Temperatur – Verlauf</title>
+    <title>Luftfeuchtigkeit, Temperatur und Lautstärke – Verlauf</title>
     <style>
         :root {
             --bg: #101624;
@@ -23,44 +23,38 @@
         main { max-width: 1000px; margin: 0 auto; }
         h1 { font-size: 1.9rem; font-weight: normal; margin: 0 0 4px; }
         .sub { color: var(--muted); margin: 0 0 20px; font-family: system-ui, sans-serif; font-size: .95rem; }
-        .legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-bottom: 8px; font-family: system-ui, sans-serif; font-size: .95rem; }
+        .legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-bottom: 14px; font-family: system-ui, sans-serif; font-size: .95rem; }
         .legend span::before {
             content: ""; display: inline-block; width: 22px; height: 4px; border-radius: 2px;
             margin-right: 8px; vertical-align: middle; background: var(--c);
         }
-        .legend.styles { color: var(--muted); font-size: .85rem; margin-bottom: 12px; }
-        .legend.styles span::before { background: none; height: 0; border-top: 3px solid var(--muted); border-radius: 0; }
-        .legend.styles .dash::before { border-top-style: dashed; }
-        #chart {
+        .chart {
             position: relative;
             background: var(--panel);
             border-radius: 10px;
             padding: 12px;
-            min-height: 360px;
+            margin-bottom: 16px;
         }
+        .chart h2 { font: normal .9rem system-ui, sans-serif; color: var(--muted); margin: 0 0 6px 4px; }
         svg { display: block; width: 100%; height: auto; font-family: system-ui, sans-serif; }
         .tip {
             position: absolute; pointer-events: none; display: none;
             background: #0b101c; border: 1px solid var(--grid); border-radius: 8px;
-            padding: 8px 10px; font: .85rem/1.5 system-ui, sans-serif; white-space: nowrap;
+            padding: 8px 10px; font: .85rem/1.5 system-ui, sans-serif; white-space: nowrap; z-index: 2;
         }
-        .status { padding: 120px 0; text-align: center; color: var(--muted); font-family: system-ui, sans-serif; }
+        .status { padding: 120px 0; text-align: center; color: var(--muted); font-family: system-ui, sans-serif; background: var(--panel); border-radius: 10px; }
         .error { color: #ff8a8a; }
     </style>
 </head>
 <body>
 <main>
-    <h1>Luftfeuchtigkeit und Temperatur im Verlauf</h1>
+    <h1>Luftfeuchtigkeit, Temperatur und Lautstärke</h1>
     <p class="sub">30.09.2026, 17:00 bis 01.10.2026, 03:00</p>
     <div class="legend">
         <span style="--c: #ffb347">Mensa (Box 7)</span>
         <span style="--c: #4fd1c5">Studio (Box 3)</span>
     </div>
-    <div class="legend styles">
-        <span>Durchgezogen: Luftfeuchtigkeit in % (linke Achse)</span>
-        <span class="dash">Gestrichelt: Temperatur in °C (rechte Achse)</span>
-    </div>
-    <div id="chart"><div class="status">Daten werden geladen …</div></div>
+    <div id="charts"><div class="status">Daten werden geladen …</div></div>
 </main>
 
 <script>
@@ -74,12 +68,20 @@
         { id: 7, name: "Mensa",  color: "#ffb347" },
         { id: 3, name: "Studio", color: "#4fd1c5" }
     ];
-    const METRICS = [
-        { key: "humidity_pct",  label: "Luftfeuchtigkeit", unit: "%",  dash: "" },
-        { key: "temperature_c", label: "Temperatur",       unit: "°C", dash: "7 5" }
+    const METRICS = {
+        humidity_pct:  { label: "Luftfeuchtigkeit", unit: "%",  dash: "" },
+        temperature_c: { label: "Temperatur",       unit: "°C", dash: "7 5" },
+        noise_pct:     { label: "Lautstärke",       unit: "dB", dash: "" }   // DB column is called noise_pct
+    };
+    // Each panel is one chart. First metric = left axis, second (optional) = right axis.
+    const PANELS = [
+        { title: "Luftfeuchtigkeit (durchgezogen, linke Achse) und Temperatur (gestrichelt, rechte Achse)",
+            keys: ["humidity_pct", "temperature_c"], ratio: 0.45 },
+        { title: "Lautstärke in dB",
+            keys: ["noise_pct"], ratio: 0.3 }
     ];
 
-    const chartEl = document.getElementById("chart");
+    const chartsEl = document.getElementById("charts");
     let series = [];
 
     function parseTime(s) {
@@ -100,62 +102,68 @@
             const rows = json.data || [];
 
             series = [];
-            METRICS.forEach(mt => BOXES.forEach(b => {
+            Object.keys(METRICS).forEach(key => BOXES.forEach(b => {
                 series.push({
-                    ...b, metric: mt,
+                    ...b, key, metric: METRICS[key],
                     points: rows
-                        .filter(r => r.box_id === b.id && r[mt.key] !== null && r[mt.key] !== undefined)
-                        .map(r => ({ t: parseTime(r.measured_at), v: r[mt.key] }))
+                        .filter(r => r.box_id === b.id && r[key] !== null && r[key] !== undefined)
+                        .map(r => ({ t: parseTime(r.measured_at), v: r[key] }))
                         .filter(p => p.t !== null && p.t >= T_START && p.t <= T_END)
                 });
             }));
 
             if (!series.some(s => s.points.length)) {
-                chartEl.innerHTML = '<div class="status">Keine Daten im Zeitraum gefunden.</div>';
+                chartsEl.innerHTML = '<div class="status">Keine Daten im Zeitraum gefunden.</div>';
                 return;
             }
             draw();
         } catch (e) {
-            chartEl.innerHTML = `<div class="status error">Fehler beim Laden: ${e.message}</div>`;
+            chartsEl.innerHTML = `<div class="status error">Fehler beim Laden: ${e.message}</div>`;
         }
     }
 
-    // Round the range outward to multiples of a nice step
-    function scaleFor(key, pad1) {
-        const vals = series.filter(s => s.metric.key === key).flatMap(s => s.points.map(p => p.v));
+    // Round the range outward to multiples of a nice step, plus one step of padding
+    function scaleFor(key) {
+        const vals = series.filter(s => s.key === key).flatMap(s => s.points.map(p => p.v));
         if (!vals.length) return { lo: 0, hi: 1, step: 1 };
         const min = Math.min(...vals), max = Math.max(...vals);
         const range = Math.max(max - min, 1);
         const step = range <= 8 ? 1 : range <= 16 ? 2 : range <= 40 ? 5 : 10;
-        return {
-            lo: Math.floor(min / step) * step - (pad1 ? step : 0),
-            hi: Math.ceil(max / step) * step + (pad1 ? step : 0),
-            step
-        };
+        return { lo: Math.floor(min / step) * step - step, hi: Math.ceil(max / step) * step + step, step };
     }
 
     function draw() {
-        const W = Math.max(chartEl.clientWidth - 24, 320);
-        const H = Math.round(W < 600 ? W * 0.8 : W * 0.45);
+        chartsEl.innerHTML = PANELS.map((p, i) =>
+            `<div class="chart" id="panel${i}"><h2>${p.title}</h2><div class="plot"></div><div class="tip"></div></div>`
+        ).join("");
+        PANELS.forEach((p, i) => drawPanel(document.getElementById("panel" + i), p));
+    }
+
+    function drawPanel(el, panel) {
+        const plot = el.querySelector(".plot"), tip = el.querySelector(".tip");
+        const W = Math.max(el.clientWidth - 24, 320);
+        const H = Math.round(W < 600 ? W * (panel.ratio + 0.3) : W * panel.ratio);
         const m = { top: 16, right: 52, bottom: 36, left: 52 };
         const iw = W - m.left - m.right, ih = H - m.top - m.bottom;
 
-        const sh = scaleFor("humidity_pct", true);
-        const st = scaleFor("temperature_c", true);
-        const x  = t => m.left + (t - T_START) / (T_END - T_START) * iw;
-        const yH = v => m.top + (1 - (v - sh.lo) / (sh.hi - sh.lo)) * ih;
-        const yT = v => m.top + (1 - (v - st.lo) / (st.hi - st.lo)) * ih;
-        const yOf = s => s.metric.key === "humidity_pct" ? yH : yT;
+        const scales = {};
+        panel.keys.forEach(k => scales[k] = scaleFor(k));
+        const x = t => m.left + (t - T_START) / (T_END - T_START) * iw;
+        const yFn = k => v => m.top + (1 - (v - scales[k].lo) / (scales[k].hi - scales[k].lo)) * ih;
 
         let g = "";
-        // left axis (humidity) with grid lines
-        for (let v = sh.lo; v <= sh.hi; v += sh.step) {
-            g += `<line x1="${m.left}" x2="${W - m.right}" y1="${yH(v)}" y2="${yH(v)}" stroke="#2a3550"/>`;
-            g += `<text x="${m.left - 8}" y="${yH(v) + 4}" text-anchor="end" fill="#8d99b5" font-size="12">${v}%</text>`;
+        // first metric: left axis with grid lines
+        const k0 = panel.keys[0], s0 = scales[k0], y0 = yFn(k0), u0 = METRICS[k0].unit;
+        for (let v = s0.lo; v <= s0.hi; v += s0.step) {
+            g += `<line x1="${m.left}" x2="${W - m.right}" y1="${y0(v)}" y2="${y0(v)}" stroke="#2a3550"/>`;
+            g += `<text x="${m.left - 8}" y="${y0(v) + 4}" text-anchor="end" fill="#8d99b5" font-size="12">${v}${u0 === "°C" ? "°" : u0}</text>`;
         }
-        // right axis (temperature), labels only
-        for (let v = st.lo; v <= st.hi; v += st.step) {
-            g += `<text x="${W - m.right + 8}" y="${yT(v) + 4}" text-anchor="start" fill="#8d99b5" font-size="12">${v}°</text>`;
+        // second metric: right axis, labels only
+        if (panel.keys[1]) {
+            const k1 = panel.keys[1], s1 = scales[k1], y1 = yFn(k1), u1 = METRICS[k1].unit;
+            for (let v = s1.lo; v <= s1.hi; v += s1.step) {
+                g += `<text x="${W - m.right + 8}" y="${y1(v) + 4}" fill="#8d99b5" font-size="12">${v}${u1 === "°C" ? "°" : u1}</text>`;
+            }
         }
         // hourly x ticks
         for (let t = T_START; t <= T_END; t += 3600000) {
@@ -163,20 +171,17 @@
             g += `<text x="${x(t)}" y="${H - m.bottom + 20}" text-anchor="middle" fill="#8d99b5" font-size="12">${fmt(t)}</text>`;
         }
         // lines
-        series.forEach(s => {
+        const panelSeries = series.filter(s => panel.keys.includes(s.key));
+        panelSeries.forEach(s => {
             if (!s.points.length) return;
-            const y = yOf(s);
+            const y = yFn(s.key);
             const d = s.points.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
             g += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="${s.metric.dash}"/>`;
         });
-        g += `<line id="cross" y1="${m.top}" y2="${H - m.bottom}" stroke="#8d99b5" stroke-width="1" style="display:none"/>`;
-        g += `<g id="dots"></g>`;
+        g += `<line class="cross" y1="${m.top}" y2="${H - m.bottom}" stroke="#8d99b5" style="display:none"/><g class="dots"></g>`;
 
-        chartEl.innerHTML =
-            `<svg id="svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Luftfeuchtigkeit und Temperatur über die Zeit">${g}</svg><div class="tip" id="tip"></div>`;
-
-        const svg = document.getElementById("svg"), cross = document.getElementById("cross"),
-            dots = document.getElementById("dots"), tip = document.getElementById("tip");
+        plot.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${panel.title}">${g}</svg>`;
+        const svg = plot.querySelector("svg"), cross = svg.querySelector(".cross"), dots = svg.querySelector(".dots");
 
         function nearest(s, t) {
             let best = null;
@@ -191,18 +196,18 @@
             const t = T_START + (px - m.left) / iw * (T_END - T_START);
             cross.setAttribute("x1", px); cross.setAttribute("x2", px); cross.style.display = "";
             let html = `<b>${fmt(t)} Uhr</b>`, d = "";
-            series.forEach(s => {
+            panelSeries.forEach(s => {
                 const p = nearest(s, t);
                 if (!p) return;
                 html += `<br><span style="color:${s.color}">●</span> ${s.name}, ${s.metric.label}: ${p.v.toFixed(1)} ${s.metric.unit} <span style="color:#8d99b5">(${fmt(p.t)})</span>`;
-                d += `<circle cx="${x(p.t)}" cy="${yOf(s)(p.v)}" r="5" fill="${s.color}" stroke="#101624" stroke-width="2"/>`;
+                d += `<circle cx="${x(p.t)}" cy="${yFn(s.key)(p.v)}" r="5" fill="${s.color}" stroke="#101624" stroke-width="2"/>`;
             });
             dots.innerHTML = d;
             tip.innerHTML = html;
             tip.style.display = "block";
-            const box = chartEl.getBoundingClientRect();
+            const box = el.getBoundingClientRect();
             const left = ev.clientX - box.left + 14;
-            tip.style.left = Math.max(8, Math.min(left, chartEl.clientWidth - tip.offsetWidth - 8)) + "px";
+            tip.style.left = Math.max(8, Math.min(left, el.clientWidth - tip.offsetWidth - 8)) + "px";
             tip.style.top = (ev.clientY - box.top - 10) + "px";
         });
         svg.addEventListener("mouseleave", hide);
