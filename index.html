@@ -1,226 +1,154 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Luftfeuchtigkeit, Temperatur und Lautstärke – Verlauf</title>
-    <style>
-        :root {
-            --bg: #101624;
-            --panel: #172033;
-            --grid: #2a3550;
-            --text: #e8ecf5;
-            --muted: #8d99b5;
-        }
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            padding: 24px 16px;
-            background: var(--bg);
-            color: var(--text);
-            font-family: Georgia, "Times New Roman", serif;
-        }
-        main { max-width: 1000px; margin: 0 auto; }
-        h1 { font-size: 1.9rem; font-weight: normal; margin: 0 0 4px; }
-        .sub { color: var(--muted); margin: 0 0 20px; font-family: system-ui, sans-serif; font-size: .95rem; }
-        .legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-bottom: 14px; font-family: system-ui, sans-serif; font-size: .95rem; }
-        .legend span::before {
-            content: ""; display: inline-block; width: 22px; height: 4px; border-radius: 2px;
-            margin-right: 8px; vertical-align: middle; background: var(--c);
-        }
-        .chart {
-            position: relative;
-            background: var(--panel);
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 16px;
-        }
-        .chart h2 { font: normal .9rem system-ui, sans-serif; color: var(--muted); margin: 0 0 6px 4px; }
-        svg { display: block; width: 100%; height: auto; font-family: system-ui, sans-serif; }
-        .tip {
-            position: absolute; pointer-events: none; display: none;
-            background: #0b101c; border: 1px solid var(--grid); border-radius: 8px;
-            padding: 8px 10px; font: .85rem/1.5 system-ui, sans-serif; white-space: nowrap; z-index: 2;
-        }
-        .status { padding: 120px 0; text-align: center; color: var(--muted); font-family: system-ui, sans-serif; background: var(--panel); border-radius: 10px; }
-        .error { color: #ff8a8a; }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIMIP News | Party Hub</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<main>
-    <h1>Luftfeuchtigkeit, Temperatur und Lautstärke</h1>
-    <p class="sub">30.09.2026, 17:00 bis 01.10.2026, 03:00</p>
-    <div class="legend">
-        <span style="--c: #ffb347">Mensa (Box 7)</span>
-        <span style="--c: #4fd1c5">Studio (Box 3)</span>
-    </div>
-    <div id="charts"><div class="status">Daten werden geladen …</div></div>
+<main class="paper">
+    <header class="masthead">
+        <div class="edition">MIMIP NEWS</div>
+        <div class="issue">
+            <span>Welcome Party HB</span>
+            <span>30. Sept 2026</span>
+        </div>
+    </header>
+
+    <nav class="topic-nav" aria-label="Messwerte">
+        <a href="#temperature">Temperatur</a>
+        <a href="#humidity">Luftfeuchtigkeit</a>
+        <a href="#noise">Lautstärke</a>
+        <a href="#alcohol">Alkoholpegel</a>
+        <a href="#co2">CO₂</a>
+    </nav>
+
+    <section class="hero" aria-labelledby="main-title">
+        <h1 id="main-title">Brandaktuell</h1>
+        <p class="lead">Ersti Party eskaliert: heiss und feucht</p>
+
+        <div class="scene-grid" aria-label="Stimmungsbilder der Party">
+            <article class="scene scene-studio">
+                <div class="scene-card">
+                    <strong>Studio</strong>
+                    <span id="studio-temp">-- °C</span>
+                    <span id="studio-humidity">-- %</span>
+                    <span id="studio-noise">-- dB</span>
+                </div>
+            </article>
+            <article class="scene scene-mensa">
+                <div class="scene-card">
+                    <strong>Mensa</strong>
+                    <span id="mensa-temp">-- °C</span>
+                    <span id="mensa-humidity">-- %</span>
+                    <span id="mensa-noise">-- dB</span>
+                </div>
+            </article>
+            <aside class="side-note">
+                <span>Und wir so:</span>
+                <strong>das war ziemlich intensiv.</strong>
+            </aside>
+        </div>
+
+        <p class="caption">Laut, heiss, feucht: So entwickelte sich die Atmosphäre über den Abend.</p>
+    </section>
+
+    <section class="overview" aria-labelledby="overview-title">
+        <h2 id="overview-title">Das Wichtigste auf einen Blick</h2>
+        <div class="metric-grid" id="metric-grid"></div>
+    </section>
+
+    <footer class="paper-footer">
+        <a href="chart.html">Entdecke mehr</a>
+    </footer>
 </main>
 
+<script src="javascript/js.js"></script>
 <script>
-    const URL_DATA = "https://party.gurulugi.myhostpoint.ch/unload.php?from=2026-09-30%2017:00&to=2026-10-01%2004:00&order=asc&exclude_box=5";
-
-    // Time axis: 17:00 -> 03:00 next day (times are used exactly as stored, no timezone conversion)
-    const T_START = Date.UTC(2026, 8, 30, 17, 0, 0);
-    const T_END   = Date.UTC(2026, 9, 1, 3, 0, 0);
-
-    const BOXES = [
-        { id: 7, name: "Mensa",  color: "#ffb347" },
-        { id: 3, name: "Studio", color: "#4fd1c5" }
-    ];
-    const METRICS = {
-        humidity_pct:  { label: "Luftfeuchtigkeit", unit: "%",  dash: "" },
-        temperature_c: { label: "Temperatur",       unit: "°C", dash: "7 5" },
-        noise_pct:     { label: "Lautstärke",       unit: "dB", dash: "" }   // DB column is called noise_pct
+    const rows = window.PARTY_UNLOAD_DATA?.data || [];
+    const boxes = {
+        3: { name: "Studio", ids: { temperature_c: "studio-temp", humidity_pct: "studio-humidity", noise_pct: "studio-noise" } },
+        7: { name: "Mensa", ids: { temperature_c: "mensa-temp", humidity_pct: "mensa-humidity", noise_pct: "mensa-noise" } }
     };
-    // Each panel is one chart. First metric = left axis, second (optional) = right axis.
-    const PANELS = [
-        { title: "Luftfeuchtigkeit (durchgezogen, linke Achse) und Temperatur (gestrichelt, rechte Achse)",
-            keys: ["humidity_pct", "temperature_c"], ratio: 0.45 },
-        { title: "Lautstärke in dB",
-            keys: ["noise_pct"], ratio: 0.3 }
+    const metricConfig = [
+        { id: "temperature", key: "temperature_c", label: "Temperatur", unit: "°C", accent: "red", digits: 1 },
+        { id: "humidity", key: "humidity_pct", label: "Luftfeuchtigkeit", unit: "%", accent: "blue", digits: 0 },
+        { id: "noise", key: "noise_pct", label: "Lautstärke", unit: "dB", accent: "orange", digits: 1 },
+        { id: "alcohol", key: "alcohol_mgl", label: "Alkohol", unit: "mg/l", accent: "violet", digits: 2 },
+        { id: "co2", key: "co2_ppm", label: "CO₂", unit: "ppm", accent: "green", digits: 0 }
     ];
 
-    const chartsEl = document.getElementById("charts");
-    let series = [];
-
-    function parseTime(s) {
-        const m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/.exec(s);
-        return m ? Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]) : null;
-    }
-    const pad = n => String(n).padStart(2, "0");
-    function fmt(t) {
-        const d = new Date(t);
-        return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+    function valuesFor(key) {
+        return rows
+            .map((row) => row[key])
+            .filter((value) => typeof value === "number" && Number.isFinite(value));
     }
 
-    async function load() {
-        try {
-            const res = await fetch(URL_DATA);
-            if (!res.ok) throw new Error("HTTP " + res.status);
-            const json = await res.json();
-            const rows = json.data || [];
-
-            series = [];
-            Object.keys(METRICS).forEach(key => BOXES.forEach(b => {
-                series.push({
-                    ...b, key, metric: METRICS[key],
-                    points: rows
-                        .filter(r => r.box_id === b.id && r[key] !== null && r[key] !== undefined)
-                        .map(r => ({ t: parseTime(r.measured_at), v: r[key] }))
-                        .filter(p => p.t !== null && p.t >= T_START && p.t <= T_END)
-                });
-            }));
-
-            if (!series.some(s => s.points.length)) {
-                chartsEl.innerHTML = '<div class="status">Keine Daten im Zeitraum gefunden.</div>';
-                return;
+    function latestFor(boxId, key) {
+        for (let i = rows.length - 1; i >= 0; i--) {
+            const row = rows[i];
+            if (row.box_id === boxId && typeof row[key] === "number") {
+                return row[key];
             }
-            draw();
-        } catch (e) {
-            chartsEl.innerHTML = `<div class="status error">Fehler beim Laden: ${e.message}</div>`;
         }
+        return null;
     }
 
-    // Round the range outward to multiples of a nice step, plus one step of padding
-    function scaleFor(key) {
-        const vals = series.filter(s => s.key === key).flatMap(s => s.points.map(p => p.v));
-        if (!vals.length) return { lo: 0, hi: 1, step: 1 };
-        const min = Math.min(...vals), max = Math.max(...vals);
+    function format(value, digits, unit) {
+        if (value === null || value === undefined || Number.isNaN(value)) return "--";
+        return `${value.toFixed(digits)} ${unit}`;
+    }
+
+    function peakLabel(key, digits, unit) {
+        let best = null;
+        for (const row of rows) {
+            const value = row[key];
+            if (typeof value !== "number" || !Number.isFinite(value)) continue;
+            if (!best || value > best.value) best = { value, box: row.box_id };
+        }
+        if (!best) return "Keine Daten";
+        return `${format(best.value, digits, unit)} (${boxes[best.box]?.name || `Box ${best.box}`})`;
+    }
+
+    function sparkline(values) {
+        if (!values.length) {
+            return '<div class="sparkline empty" aria-hidden="true"></div>';
+        }
+        const sampleSize = 34;
+        const step = Math.max(1, Math.floor(values.length / sampleSize));
+        const sampled = values.filter((_, index) => index % step === 0).slice(-sampleSize);
+        const min = Math.min(...sampled);
+        const max = Math.max(...sampled);
         const range = Math.max(max - min, 1);
-        const step = range <= 8 ? 1 : range <= 16 ? 2 : range <= 40 ? 5 : 10;
-        return { lo: Math.floor(min / step) * step - step, hi: Math.ceil(max / step) * step + step, step };
+        const points = sampled.map((value, index) => {
+            const x = sampled.length === 1 ? 50 : (index / (sampled.length - 1)) * 100;
+            const y = 42 - ((value - min) / range) * 30;
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(" ");
+        return `<svg class="sparkline" viewBox="0 0 100 48" preserveAspectRatio="none" aria-hidden="true">
+            <polyline points="${points}" vector-effect="non-scaling-stroke"></polyline>
+        </svg>`;
     }
 
-    function draw() {
-        chartsEl.innerHTML = PANELS.map((p, i) =>
-            `<div class="chart" id="panel${i}"><h2>${p.title}</h2><div class="plot"></div><div class="tip"></div></div>`
-        ).join("");
-        PANELS.forEach((p, i) => drawPanel(document.getElementById("panel" + i), p));
+    for (const [boxId, box] of Object.entries(boxes)) {
+        for (const [key, elementId] of Object.entries(box.ids)) {
+            const config = metricConfig.find((metric) => metric.key === key);
+            document.getElementById(elementId).textContent = format(latestFor(Number(boxId), key), config.digits, config.unit);
+        }
     }
 
-    function drawPanel(el, panel) {
-        const plot = el.querySelector(".plot"), tip = el.querySelector(".tip");
-        const W = Math.max(el.clientWidth - 24, 320);
-        const H = Math.round(W < 600 ? W * (panel.ratio + 0.3) : W * panel.ratio);
-        const m = { top: 16, right: 52, bottom: 36, left: 52 };
-        const iw = W - m.left - m.right, ih = H - m.top - m.bottom;
-
-        const scales = {};
-        panel.keys.forEach(k => scales[k] = scaleFor(k));
-        const x = t => m.left + (t - T_START) / (T_END - T_START) * iw;
-        const yFn = k => v => m.top + (1 - (v - scales[k].lo) / (scales[k].hi - scales[k].lo)) * ih;
-
-        let g = "";
-        // first metric: left axis with grid lines
-        const k0 = panel.keys[0], s0 = scales[k0], y0 = yFn(k0), u0 = METRICS[k0].unit;
-        for (let v = s0.lo; v <= s0.hi; v += s0.step) {
-            g += `<line x1="${m.left}" x2="${W - m.right}" y1="${y0(v)}" y2="${y0(v)}" stroke="#2a3550"/>`;
-            g += `<text x="${m.left - 8}" y="${y0(v) + 4}" text-anchor="end" fill="#8d99b5" font-size="12">${v}${u0 === "°C" ? "°" : u0}</text>`;
-        }
-        // second metric: right axis, labels only
-        if (panel.keys[1]) {
-            const k1 = panel.keys[1], s1 = scales[k1], y1 = yFn(k1), u1 = METRICS[k1].unit;
-            for (let v = s1.lo; v <= s1.hi; v += s1.step) {
-                g += `<text x="${W - m.right + 8}" y="${y1(v) + 4}" fill="#8d99b5" font-size="12">${v}${u1 === "°C" ? "°" : u1}</text>`;
-            }
-        }
-        // hourly x ticks
-        for (let t = T_START; t <= T_END; t += 3600000) {
-            g += `<line x1="${x(t)}" x2="${x(t)}" y1="${m.top}" y2="${H - m.bottom}" stroke="#2a3550" stroke-dasharray="2 4"/>`;
-            g += `<text x="${x(t)}" y="${H - m.bottom + 20}" text-anchor="middle" fill="#8d99b5" font-size="12">${fmt(t)}</text>`;
-        }
-        // lines
-        const panelSeries = series.filter(s => panel.keys.includes(s.key));
-        panelSeries.forEach(s => {
-            if (!s.points.length) return;
-            const y = yFn(s.key);
-            const d = s.points.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
-            g += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="${s.metric.dash}"/>`;
-        });
-        g += `<line class="cross" y1="${m.top}" y2="${H - m.bottom}" stroke="#8d99b5" style="display:none"/><g class="dots"></g>`;
-
-        plot.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${panel.title}">${g}</svg>`;
-        const svg = plot.querySelector("svg"), cross = svg.querySelector(".cross"), dots = svg.querySelector(".dots");
-
-        function nearest(s, t) {
-            let best = null;
-            for (const p of s.points) if (!best || Math.abs(p.t - t) < Math.abs(best.t - t)) best = p;
-            return best && Math.abs(best.t - t) <= 15 * 60000 ? best : null;
-        }
-
-        svg.addEventListener("mousemove", ev => {
-            const r = svg.getBoundingClientRect();
-            const px = (ev.clientX - r.left) * (W / r.width);
-            if (px < m.left || px > W - m.right) return hide();
-            const t = T_START + (px - m.left) / iw * (T_END - T_START);
-            cross.setAttribute("x1", px); cross.setAttribute("x2", px); cross.style.display = "";
-            let html = `<b>${fmt(t)} Uhr</b>`, d = "";
-            panelSeries.forEach(s => {
-                const p = nearest(s, t);
-                if (!p) return;
-                html += `<br><span style="color:${s.color}">●</span> ${s.name}, ${s.metric.label}: ${p.v.toFixed(1)} ${s.metric.unit} <span style="color:#8d99b5">(${fmt(p.t)})</span>`;
-                d += `<circle cx="${x(p.t)}" cy="${yFn(s.key)(p.v)}" r="5" fill="${s.color}" stroke="#101624" stroke-width="2"/>`;
-            });
-            dots.innerHTML = d;
-            tip.innerHTML = html;
-            tip.style.display = "block";
-            const box = el.getBoundingClientRect();
-            const left = ev.clientX - box.left + 14;
-            tip.style.left = Math.max(8, Math.min(left, el.clientWidth - tip.offsetWidth - 8)) + "px";
-            tip.style.top = (ev.clientY - box.top - 10) + "px";
-        });
-        svg.addEventListener("mouseleave", hide);
-        function hide() { cross.style.display = "none"; dots.innerHTML = ""; tip.style.display = "none"; }
-    }
-
-    let resizeTimer;
-    window.addEventListener("resize", () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => series.length && draw(), 150);
-    });
-
-    load();
+    document.getElementById("metric-grid").innerHTML = metricConfig.map((metric) => {
+        const values = valuesFor(metric.key);
+        const latest = values.length ? values[values.length - 1] : null;
+        return `<article class="metric-card ${metric.accent}" id="${metric.id}">
+            <div class="metric-label">${metric.label}</div>
+            <strong>${format(latest, metric.digits, metric.unit)}</strong>
+            <span class="metric-note">${values.length ? "letzter Messwert" : "nicht gemessen"}</span>
+            ${sparkline(values)}
+            <small>${peakLabel(metric.key, metric.digits, metric.unit)}<br>Peak</small>
+        </article>`;
+    }).join("");
 </script>
 </body>
 </html>

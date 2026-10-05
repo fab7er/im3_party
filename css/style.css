@@ -1,0 +1,373 @@
+:root {
+    --paper: #f4f3ef;
+    --ink: #060606;
+    --muted: #6d6a65;
+    --rule: #d8d4cd;
+    --card: #ffffff;
+    --red: #ff4256;
+    --blue: #2c8cf0;
+    --orange: #f2a11a;
+    --violet: #793de8;
+    --green: #149961;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100vh;
+    margin: 0;
+    background: #e8e7e3;
+    color: var(--ink);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.paper {
+    width: min(100%, 760px);
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 28px 32px 56px;
+    background: var(--paper);
+    box-shadow: 0 20px 70px rgba(28, 25, 20, 0.18);
+}
+
+.masthead {
+    position: relative;
+    display: flex;
+    align-items: start;
+    justify-content: center;
+    min-height: 42px;
+    border-bottom: 1px solid var(--rule);
+}
+
+.edition {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(1.1rem, 3.1vw, 1.55rem);
+    letter-spacing: 0;
+    color: #4b4740;
+}
+
+.issue {
+    position: absolute;
+    right: 0;
+    top: 1px;
+    display: grid;
+    gap: 3px;
+    color: #8b867e;
+    font-size: 0.58rem;
+    line-height: 1.1;
+    text-align: right;
+}
+
+.topic-nav {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    border-bottom: 1px solid var(--rule);
+    color: #595650;
+    font-size: clamp(0.58rem, 1.8vw, 0.78rem);
+}
+
+.topic-nav a {
+    display: grid;
+    min-height: 30px;
+    place-items: center;
+    white-space: nowrap;
+}
+
+.topic-nav a + a {
+    border-left: 1px solid var(--rule);
+}
+
+.hero {
+    padding-top: 28px;
+    text-align: center;
+}
+
+.hero h1 {
+    margin: 0;
+    font-family: "Arial Narrow", Impact, Haettenschweiler, "Arial Black", sans-serif;
+    font-size: clamp(3.35rem, 12vw, 6.4rem);
+    line-height: 0.78;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+.lead {
+    margin: 12px 0 18px;
+    font-family: Impact, Haettenschweiler, "Arial Black", sans-serif;
+    font-size: clamp(1.35rem, 5.7vw, 3rem);
+    line-height: 0.92;
+    text-transform: uppercase;
+}
+
+.scene-grid {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: min(100%, 600px);
+    margin: 0 auto;
+    padding-right: 72px;
+}
+
+.scene {
+    position: relative;
+    min-height: clamp(150px, 33vw, 220px);
+    overflow: hidden;
+    border: 3px solid var(--paper);
+    background-color: #181016;
+}
+
+.scene::before,
+.scene::after {
+    position: absolute;
+    content: "";
+    inset: 0;
+}
+
+.scene::before {
+    background:
+        linear-gradient(115deg, transparent 0 42%, rgba(255, 255, 255, 0.34) 43% 44%, transparent 45%),
+        repeating-linear-gradient(90deg, transparent 0 13%, rgba(255, 255, 255, 0.28) 14%, transparent 15% 20%),
+        radial-gradient(circle at 28% 80%, rgba(255, 62, 117, 0.9), transparent 20%),
+        radial-gradient(circle at 72% 74%, rgba(255, 134, 31, 0.78), transparent 23%),
+        radial-gradient(circle at 44% 46%, rgba(143, 42, 255, 0.78), transparent 22%),
+        linear-gradient(180deg, #2f1328 0%, #121019 50%, #1f0e18 100%);
+}
+
+.scene::after {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 12%, transparent 12%),
+        repeating-linear-gradient(0deg, transparent 0 18px, rgba(255, 255, 255, 0.12) 19px, transparent 20px),
+        linear-gradient(180deg, transparent 58%, rgba(0, 0, 0, 0.52));
+    mix-blend-mode: screen;
+    opacity: 0.82;
+}
+
+.scene-mensa::before {
+    background:
+        repeating-linear-gradient(90deg, rgba(255, 212, 90, 0.22) 0 8px, transparent 9px 34px),
+        radial-gradient(circle at 22% 72%, rgba(255, 116, 55, 0.9), transparent 22%),
+        radial-gradient(circle at 70% 38%, rgba(40, 194, 255, 0.58), transparent 18%),
+        radial-gradient(circle at 58% 72%, rgba(255, 56, 164, 0.72), transparent 22%),
+        linear-gradient(180deg, #37141d 0%, #171219 54%, #35160f 100%);
+}
+
+.scene-card {
+    position: absolute;
+    left: 16px;
+    top: 48px;
+    z-index: 1;
+    display: grid;
+    gap: 5px;
+    min-width: 76px;
+    padding: 9px 11px;
+    border-radius: 7px;
+    background: rgba(8, 8, 10, 0.72);
+    color: #fff;
+    font-size: 0.68rem;
+    text-align: left;
+}
+
+.scene-card strong {
+    font-size: 0.78rem;
+}
+
+.side-note {
+    position: absolute;
+    right: 0;
+    top: 18px;
+    width: 62px;
+    color: #141414;
+    font-family: "Arial Black", Impact, sans-serif;
+    font-size: clamp(0.58rem, 1.7vw, 0.74rem);
+    line-height: 1.14;
+    text-align: left;
+    transform: rotate(-7deg);
+}
+
+.side-note::after {
+    display: block;
+    width: 38px;
+    height: 34px;
+    margin: 6px 0 0 8px;
+    border-left: 3px solid var(--ink);
+    border-bottom: 3px solid var(--ink);
+    border-radius: 0 0 0 32px;
+    content: "";
+}
+
+.side-note strong {
+    display: block;
+}
+
+.caption {
+    margin: 16px 0 0;
+    font-family: Impact, Haettenschweiler, "Arial Black", sans-serif;
+    font-size: clamp(0.7rem, 2.6vw, 1rem);
+    text-transform: uppercase;
+}
+
+.overview {
+    padding-top: 18px;
+}
+
+.overview h2 {
+    margin: 0 0 18px;
+    font-family: Impact, Haettenschweiler, "Arial Black", sans-serif;
+    font-size: clamp(1.5rem, 5.2vw, 3rem);
+    line-height: 0.95;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.metric-card {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+    min-height: 168px;
+    padding: 13px 10px 12px;
+    border-radius: 7px;
+    background: var(--card);
+    box-shadow: 0 2px 16px rgba(49, 44, 36, 0.06);
+    color: var(--accent);
+}
+
+.metric-card.red { --accent: var(--red); }
+.metric-card.blue { --accent: var(--blue); }
+.metric-card.orange { --accent: var(--orange); }
+.metric-card.violet { --accent: var(--violet); }
+.metric-card.green { --accent: var(--green); }
+
+.metric-label {
+    min-height: 20px;
+    font-size: clamp(0.54rem, 1.45vw, 0.68rem);
+    font-weight: 800;
+    line-height: 1.05;
+}
+
+.metric-card strong {
+    color: var(--accent);
+    font-size: clamp(1.05rem, 3vw, 1.75rem);
+    line-height: 0.9;
+    white-space: nowrap;
+}
+
+.metric-note {
+    min-height: 24px;
+    color: #9a948b;
+    font-size: clamp(0.5rem, 1.35vw, 0.63rem);
+    line-height: 1.1;
+}
+
+.sparkline {
+    width: 100%;
+    height: 48px;
+    margin-top: auto;
+}
+
+.sparkline polyline {
+    fill: none;
+    stroke: var(--accent);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 3;
+}
+
+.sparkline.empty {
+    border-bottom: 2px dashed var(--accent);
+    opacity: 0.36;
+}
+
+.metric-card small {
+    min-height: 26px;
+    color: #383633;
+    font-size: clamp(0.5rem, 1.35vw, 0.62rem);
+    line-height: 1.15;
+    text-align: center;
+}
+
+.paper-footer {
+    display: grid;
+    place-items: center;
+    padding-top: 42px;
+}
+
+.paper-footer a {
+    display: inline-grid;
+    min-height: 48px;
+    place-items: center;
+    padding: 0 19px;
+    border-radius: 9px;
+    background: #ff8f8e;
+    color: #fff;
+    font-family: Impact, Haettenschweiler, "Arial Black", sans-serif;
+    font-size: 1.18rem;
+    text-transform: uppercase;
+    box-shadow: 0 6px 0 #ffd0ce;
+}
+
+@media (max-width: 680px) {
+    .paper {
+        padding: 20px 16px 44px;
+    }
+
+    .issue {
+        display: none;
+    }
+
+    .topic-nav {
+        overflow-x: auto;
+        grid-template-columns: repeat(5, minmax(112px, 1fr));
+    }
+
+    .scene-grid {
+        padding-right: 0;
+    }
+
+    .side-note {
+        display: none;
+    }
+
+    .metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .metric-card:last-child {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 420px) {
+    .scene-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .scene {
+        min-height: 190px;
+    }
+
+    .metric-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .metric-card:last-child {
+        grid-column: auto;
+    }
+}
