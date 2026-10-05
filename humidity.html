@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MMP News | Luftfeuchtigkeit</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main class="paper subpage humidity-page">
+    <header class="masthead">
+        <a class="edition" href="index.html"><span>MMP</span><mark>NEWS</mark></a>
+        <div class="issue">
+            <span>Feuchtigkeits Report</span>
+            <span>30. Sept 2026</span>
+        </div>
+    </header>
+
+    <nav class="topic-nav" aria-label="Messwerte">
+        <a href="temperature.html">Temperatur</a>
+        <a href="humidity.html" aria-current="page">Luftfeuchtigkeit</a>
+        <a href="noise.html">Lautstärke</a>
+        <a href="index.html#alcohol">Alkoholpegel</a>
+    </nav>
+
+    <h1 class="main-title" id="main-title">Feucht</h1>
+
+    <section class="subpage-intro" aria-labelledby="intro-title">
+        <p class="lead" id="intro-title">Die Luft steigt sichtbar an</p>
+        <p>Nur die Luftfeuchtigkeit zählt: Diese Story zeigt, wie sich der Raum im Verlauf der Nacht verändert hat.</p>
+    </section>
+
+    <section class="scrolly humidity-scrolly" aria-labelledby="humidity-scrolly-title">
+        <div class="scrolly-visual" aria-live="polite">
+            <p class="scrolly-kicker">Feuchtigkeitsverlauf</p>
+            <h2 id="humidity-scrolly-title">Scroll durch die Luft</h2>
+            <div class="scrolly-readout">
+                <span id="scrolly-label">Luftfeuchtigkeit</span>
+                <strong id="scrolly-value">--</strong>
+                <small id="scrolly-context">--</small>
+            </div>
+            <div class="scrolly-chart blue" id="scrolly-chart" aria-hidden="true"></div>
+        </div>
+        <div class="scrolly-steps" id="scrolly-steps"></div>
+    </section>
+
+    <footer class="paper-footer">
+        <a href="index.html">Zurück zur Titelseite</a>
+    </footer>
+</main>
+
+<script src="javascript/js.js"></script>
+<script>
+    const rows = window.PARTY_UNLOAD_DATA?.data || [];
+    const boxes = {
+        3: { name: "Studio" },
+        7: { name: "Mensa" }
+    };
+
+    function humidityPoints() {
+        return rows
+            .map((row) => ({ value: row.humidity_pct, box: row.box_id, time: row.measured_at }))
+            .filter((point) => typeof point.value === "number" && Number.isFinite(point.value));
+    }
+
+    const points = humidityPoints();
+    const first = points[0] || null;
+    const last = points[points.length - 1] || null;
+    const peak = points.reduce((best, point) => point.value > best.value ? point : best, points[0]);
+    const low = points.reduce((best, point) => point.value < best.value ? point : best, points[0]);
+    const average = points.reduce((sum, point) => sum + point.value, 0) / points.length;
+
+    function format(value, digits = 1) {
+        if (value === null || value === undefined || Number.isNaN(value)) return "--";
+        return `${value.toFixed(digits)} %`;
+    }
+
+    function timeOnly(dateTime) {
+        return dateTime ? dateTime.slice(11, 16) : "--:--";
+    }
+
+    function room(point) {
+        return boxes[point?.box]?.name || "Raum";
+    }
+
+    function delta(from, to) {
+        if (!from || !to) return "--";
+        const value = to.value - from.value;
+        return `${value >= 0 ? "+" : ""}${value.toFixed(1)} %`;
+    }
+
+    function sparkline(values) {
+        if (!values.length) return '<div class="sparkline empty" aria-hidden="true"></div>';
+        const sampleSize = 48;
+        const step = Math.max(1, Math.floor(values.length / sampleSize));
+        const sampled = values.filter((_, index) => index % step === 0).slice(-sampleSize);
+        const min = Math.min(...sampled);
+        const max = Math.max(...sampled);
+        const range = Math.max(max - min, 1);
+        const points = sampled.map((value, index) => {
+            const x = sampled.length === 1 ? 50 : (index / (sampled.length - 1)) * 100;
+            const y = 42 - ((value - min) / range) * 30;
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(" ");
+        return `<svg class="sparkline" viewBox="0 0 100 48" preserveAspectRatio="none" aria-hidden="true">
+            <polyline points="${points}" vector-effect="non-scaling-stroke"></polyline>
+        </svg>`;
+    }
+
+    const chapters = [
+        {
+            point: first,
+            title: "17:00 Uhr: Noch trocken genug",
+            body: `Der erste Feuchtigkeitswert liegt bei ${format(first?.value)} in der ${room(first)}. Die Nacht startet kontrolliert.`
+        },
+        {
+            point: low,
+            title: "17:18 Uhr: Der tiefste Punkt",
+            body: `Kurz nach Beginn fällt die Luftfeuchtigkeit auf ${format(low?.value)} in der ${room(low)}. Danach geht die Kurve schrittweise nach oben.`
+        },
+        {
+            point: peak,
+            title: "21:14 Uhr: Die Luft hängt",
+            body: `Der Peak kommt im Studio: ${format(peak?.value)}. Das ist der feuchteste Moment der Messreihe.`
+        },
+        {
+            point: last,
+            title: "03:59 Uhr: Feucht bleibt es",
+            body: `Am Schluss stehen ${format(last?.value)} im ${room(last)}. Vom ersten bis zum letzten Messpunkt steigt die Luftfeuchtigkeit um ${delta(first, last)}. Durchschnitt der Nacht: ${format(average)}.`
+        }
+    ];
+
+    const scrollySteps = document.getElementById("scrolly-steps");
+    const scrollyValue = document.getElementById("scrolly-value");
+    const scrollyContext = document.getElementById("scrolly-context");
+    const scrollyChart = document.getElementById("scrolly-chart");
+
+    function render(index) {
+        const chapter = chapters[index];
+        if (!chapter) return;
+        scrollyValue.textContent = format(chapter.point?.value);
+        scrollyContext.textContent = `${timeOnly(chapter.point?.time)} Uhr, ${room(chapter.point)}`;
+        scrollyChart.innerHTML = sparkline(points.map((point) => point.value));
+        document.querySelectorAll(".scrolly-step").forEach((step, stepIndex) => {
+            step.classList.toggle("is-active", stepIndex === index);
+        });
+    }
+
+    scrollySteps.innerHTML = chapters.map((chapter, index) => `
+        <article class="scrolly-step ${index === 0 ? "is-active" : ""}" data-step="${index}">
+            <span>${String(index + 1).padStart(2, "0")}</span>
+            <h3>${chapter.title}</h3>
+            <p>${chapter.body}</p>
+        </article>
+    `).join("");
+
+    render(0);
+
+    const observer = new IntersectionObserver((entries) => {
+        const visible = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) render(Number(visible.target.dataset.step));
+    }, { threshold: [0.45, 0.65, 0.85] });
+
+    document.querySelectorAll(".scrolly-step").forEach((step) => observer.observe(step));
+</script>
+</body>
+</html>

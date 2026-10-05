@@ -9,7 +9,7 @@
 <body>
 <main class="paper">
     <header class="masthead">
-        <div class="edition"><span>MMP</span><mark>NEWS</mark></div>
+        <a class="edition" href="index.html"><span>MMP</span><mark>NEWS</mark></a>
         <div class="issue">
             <span>Welcome Party HB</span>
             <span>30. Sept 2026</span>
@@ -17,9 +17,9 @@
     </header>
 
     <nav class="topic-nav" aria-label="Messwerte">
-        <a href="#temperature">Temperatur</a>
-        <a href="#humidity">Luftfeuchtigkeit</a>
-        <a href="#noise">Lautstärke</a>
+        <a href="temperature.html">Temperatur</a>
+        <a href="humidity.html">Luftfeuchtigkeit</a>
+        <a href="noise.html">Lautstärke</a>
         <a href="#alcohol">Alkoholpegel</a>
     </nav>
 
@@ -35,29 +35,10 @@
         <p class="lead">Ersti Party eskaliert: heiss und feucht</p>
 
         <div class="scene-grid" aria-label="Stimmungsbilder der Party">
-            <article class="scene scene-studio">
-                <div class="scene-card">
-                    <strong>Studio</strong>
-                    <span id="studio-temp">-- °C</span>
-                    <span id="studio-humidity">-- %</span>
-                    <span id="studio-noise">-- dB</span>
-                </div>
-            </article>
-            <article class="scene scene-mensa">
-                <div class="scene-card">
-                    <strong>Mensa</strong>
-                    <span id="mensa-temp">-- °C</span>
-                    <span id="mensa-humidity">-- %</span>
-                    <span id="mensa-noise">-- dB</span>
-                </div>
-            </article>
-            <aside class="side-note">
-                <span>Und wir so:</span>
-                <strong>das war ziemlich intensiv.</strong>
-            </aside>
+            <article class="scene scene-studio"></article>
+            <article class="scene scene-mensa"></article>
         </div>
 
-        <p class="caption">Laut, heiss, feucht: So entwickelte sich die Atmosphäre über den Abend.</p>
         <article class="story-copy" id="story-copy" aria-label="Story aus den Messdaten"></article>
     </section>
 
@@ -66,18 +47,84 @@
         <div class="metric-grid" id="metric-grid"></div>
     </section>
 
-    <section class="scrolly" aria-labelledby="scrolly-title">
-        <div class="scrolly-visual" aria-live="polite">
-            <p class="scrolly-kicker">Die Nacht in Daten</p>
-            <h2 id="scrolly-title">Scroll durch die Party</h2>
-            <div class="scrolly-readout">
-                <span id="scrolly-label">Messwert</span>
-                <strong id="scrolly-value">--</strong>
-                <small id="scrolly-context">--</small>
-            </div>
-            <div class="scrolly-chart" id="scrolly-chart" aria-hidden="true"></div>
+    <section class="linea-story" aria-labelledby="linea-story-title">
+        <h2 id="linea-story-title">Abendprotokoll</h2>
+        <div class="linea-timeline">
+            <svg class="linea-route" viewBox="0 0 860 1720" preserveAspectRatio="none" aria-hidden="true">
+                <path class="linea-route-main" d="M428 0 C428 95 178 70 178 190 C178 315 686 250 686 386 C686 515 205 455 205 600 C205 748 668 680 668 830 C668 970 188 905 188 1060 C188 1210 690 1135 690 1295 C690 1445 426 1415 426 1720" />
+                <path class="linea-route-dots" d="M428 0 C428 95 178 70 178 190 C178 315 686 250 686 386 C686 515 205 455 205 600 C205 748 668 680 668 830 C668 970 188 905 188 1060 C188 1210 690 1135 690 1295 C690 1445 426 1415 426 1720" />
+            </svg>
+            <article class="linea-event">
+                <svg viewBox="0 0 140 120" aria-hidden="true">
+                    <path d="M34 100 V24 h48 v76 M47 100 V40 h23 v60 M64 68 h2" />
+                    <path d="M96 100 q-9 -19 0 -38 M91 62 q10 -13 22 0 M100 61 q5 17 -2 39 M89 100 h25 M99 50 a7 7 0 1 0 0 -14 a7 7 0 1 0 0 14" />
+                    <path d="M48 88 q10 -8 20 0" />
+                </svg>
+                <div>
+                    <span>17:00</span>
+                    <h3>Leute trudeln ein</h3>
+                    <p>Alle tun kurz so, als wuessten sie genau, wohin mit Jacke und Becher.</p>
+                </div>
+            </article>
+            <article class="linea-event">
+                <svg viewBox="0 0 140 120" aria-hidden="true">
+                    <path d="M42 34 l22 12 l-16 35 q-7 15 -21 9 q-14 -7 -7 -22 z M23 91 h34" />
+                    <path d="M98 34 l-22 12 l16 35 q7 15 21 9 q14 -7 7 -22 z M83 91 h34" />
+                    <path d="M58 46 q12 12 24 0 M48 58 q22 16 44 0" />
+                </svg>
+                <div>
+                    <span>18:30</span>
+                    <h3>Erster Drink</h3>
+                    <p>Die Smalltalk-Maschine springt an. Noch klingt alles nach Orientierungstag.</p>
+                </div>
+            </article>
+            <article class="linea-event">
+                <svg viewBox="0 0 140 120" aria-hidden="true">
+                    <path d="M46 38 h44 l-12 31 q-6 15 -20 15 q-14 0 -20 -15 z" />
+                    <path d="M62 84 l-7 18 M74 84 l9 18 M49 102 h40" />
+                    <path d="M86 39 l16 -16 M96 57 l24 -5 M37 91 l-20 12 M95 91 l21 11 M56 55 l-17 -15 M68 39 l-4 -23" />
+                </svg>
+                <div>
+                    <span>19:20</span>
+                    <h3>Glas macht Drama</h3>
+                    <p>Klirr. Eine Sekunde Stille. Dann sagt jemand: “War sicher schon vorher kaputt.”</p>
+                </div>
+            </article>
+            <article class="linea-event">
+                <svg viewBox="0 0 140 120" aria-hidden="true">
+                    <path d="M70 20 q16 0 16 18 v18 q0 18 -16 18 q-16 0 -16 -18 v-18 q0 -18 16 -18 z" />
+                    <path d="M45 52 q0 31 25 31 q25 0 25 -31 M70 83 v18 M52 101 h36" />
+                    <path d="M91 30 q13 9 13 22 M49 30 q-13 9 -13 22 M61 38 q9 -6 18 0" />
+                </svg>
+                <div>
+                    <span>21:14</span>
+                    <h3>Alle singen</h3>
+                    <p>Keiner kennt die zweite Strophe. Das haelt aber niemanden auf.</p>
+                </div>
+            </article>
+            <article class="linea-event">
+                <svg viewBox="0 0 140 120" aria-hidden="true">
+                    <path d="M36 75 q17 -45 34 -6 q17 -39 34 6 M51 60 q19 -18 38 0 M42 87 q28 16 57 0" />
+                    <path d="M29 31 l24 8 l-18 17 l23 -1 l-12 25 M88 28 l-7 22 l23 -8 l-14 19 l23 4" />
+                </svg>
+                <div>
+                    <span>22:11</span>
+                    <h3>Backflip-Zeit</h3>
+                    <p>Fragwuerdige Idee, ueberraschend solide Landung. Der Raum applaudiert pflichtbewusst.</p>
+                </div>
+            </article>
+            <article class="linea-event">
+                <svg viewBox="0 0 140 120" aria-hidden="true">
+                    <path d="M42 36 q24 -14 45 4 q22 19 5 41 q-18 23 -48 2" />
+                    <path d="M48 83 h-17 M31 83 l12 -12 M31 83 l12 12 M96 42 h25 M113 34 l10 8 l-10 8" />
+                </svg>
+                <div>
+                    <span>03:59</span>
+                    <h3>Abgang in Raten</h3>
+                    <p>Der Bass ist muede, die Leute auch. Nur die Luft bleibt noch ein bisschen da.</p>
+                </div>
+            </article>
         </div>
-        <div class="scrolly-steps" id="scrolly-steps"></div>
     </section>
 
     <footer class="paper-footer">
@@ -89,8 +136,8 @@
 <script>
     const rows = window.PARTY_UNLOAD_DATA?.data || [];
     const boxes = {
-        3: { name: "Studio", ids: { temperature_c: "studio-temp", humidity_pct: "studio-humidity", noise_pct: "studio-noise" } },
-        7: { name: "Mensa", ids: { temperature_c: "mensa-temp", humidity_pct: "mensa-humidity", noise_pct: "mensa-noise" } }
+        3: { name: "Studio" },
+        7: { name: "Mensa" }
     };
     const metrics = {
         temperature_c: { label: "Temperatur", unit: "°C", accent: "red", digits: 1 },
@@ -109,16 +156,6 @@
             .filter((value) => typeof value === "number" && Number.isFinite(value));
     }
 
-    function latestFor(boxId, key) {
-        for (let i = rows.length - 1; i >= 0; i--) {
-            const row = rows[i];
-            if (row.box_id === boxId && typeof row[key] === "number") {
-                return row[key];
-            }
-        }
-        return null;
-    }
-
     function latestMetricValue(key) {
         for (let i = rows.length - 1; i >= 0; i--) {
             const value = rows[i][key];
@@ -132,17 +169,6 @@
     function format(value, digits, unit) {
         if (value === null || value === undefined || Number.isNaN(value)) return "--";
         return `${value.toFixed(digits)} ${unit}`;
-    }
-
-    function peakLabel(key, digits, unit) {
-        let best = null;
-        for (const row of rows) {
-            const value = row[key];
-            if (typeof value !== "number" || !Number.isFinite(value)) continue;
-            if (!best || value > best.value) best = { value, box: row.box_id };
-        }
-        if (!best) return "Keine Daten";
-        return `${format(best.value, digits, unit)} (${boxes[best.box]?.name || `Box ${best.box}`})`;
     }
 
     function strongestFor(key, direction = "max") {
@@ -161,53 +187,6 @@
         return dateTime ? dateTime.slice(11, 16) : "--:--";
     }
 
-    function firstMetricPoint(key) {
-        for (const row of rows) {
-            const value = row[key];
-            if (typeof value === "number" && Number.isFinite(value)) {
-                return { value, box: row.box_id, time: row.measured_at };
-            }
-        }
-        return null;
-    }
-
-    function latestMetricPoint(key) {
-        for (let i = rows.length - 1; i >= 0; i--) {
-            const value = rows[i][key];
-            if (typeof value === "number" && Number.isFinite(value)) {
-                return { value, box: rows[i].box_id, time: rows[i].measured_at };
-            }
-        }
-        return null;
-    }
-
-    function sparkline(values) {
-        if (!values.length) {
-            return '<div class="sparkline empty" aria-hidden="true"></div>';
-        }
-        const sampleSize = 34;
-        const step = Math.max(1, Math.floor(values.length / sampleSize));
-        const sampled = values.filter((_, index) => index % step === 0).slice(-sampleSize);
-        const min = Math.min(...sampled);
-        const max = Math.max(...sampled);
-        const range = Math.max(max - min, 1);
-        const points = sampled.map((value, index) => {
-            const x = sampled.length === 1 ? 50 : (index / (sampled.length - 1)) * 100;
-            const y = 42 - ((value - min) / range) * 30;
-            return `${x.toFixed(1)},${y.toFixed(1)}`;
-        }).join(" ");
-        return `<svg class="sparkline" viewBox="0 0 100 48" preserveAspectRatio="none" aria-hidden="true">
-            <polyline points="${points}" vector-effect="non-scaling-stroke"></polyline>
-        </svg>`;
-    }
-
-    for (const [boxId, box] of Object.entries(boxes)) {
-        for (const [key, elementId] of Object.entries(box.ids)) {
-            const config = metrics[key];
-            document.getElementById(elementId).textContent = format(latestFor(Number(boxId), key), config.digits, config.unit);
-        }
-    }
-
     document.getElementById("metric-grid").innerHTML = metricConfig.map((metric) => {
         const values = valuesFor(metric.key);
         const latest = latestMetricValue(metric.key);
@@ -215,116 +194,63 @@
             <div class="metric-label">${metric.label}</div>
             <strong>${format(latest, metric.digits, metric.unit)}</strong>
             <span class="metric-note">${values.length ? "letzter Messwert" : "nicht gemessen"}</span>
-            ${sparkline(values)}
-            <small>${peakLabel(metric.key, metric.digits, metric.unit)}<br>Peak</small>
         </article>`;
     }).join("");
 
-    const tempPeak = strongestFor("temperature_c");
     const humidityPeak = strongestFor("humidity_pct");
     const noisePeak = strongestFor("noise_pct");
-    const quietest = strongestFor("noise_pct", "min");
     const latestTemp = latestMetricValue("temperature_c");
     const latestHumidity = latestMetricValue("humidity_pct");
     const latestNoise = latestMetricValue("noise_pct");
-    const firstTemp = firstMetricPoint("temperature_c");
-    const latestNoisePoint = latestMetricPoint("noise_pct");
     document.getElementById("story-copy").innerHTML = `
-        <p><strong>Die Nacht hatte zwei Gesichter:</strong> Erst wurde es laut, dann blieb die Luft hängen. Um ${timeOnly(noisePeak?.time)} Uhr schoss die Lautstärke im ${boxes[noisePeak?.box]?.name || "Raum"} auf ${format(noisePeak?.value, 1, "dB")}.</p>
-        <p>Der Feuchte-Peak kam schon früher: ${format(humidityPeak?.value, 1, "%")} um ${timeOnly(humidityPeak?.time)} Uhr im ${boxes[humidityPeak?.box]?.name || "Raum"}. Heissester Moment: ${format(tempPeak?.value, 1, "°C")} kurz nach ${timeOnly(tempPeak?.time)} Uhr.</p>
-        <p>Zum Schluss war die Party messbar runtergekühlt: ${format(latestTemp, 1, "°C")}, ${format(latestHumidity, 0, "%")} Luftfeuchtigkeit und nur noch ${format(latestNoise, 1, "dB")}. Der leiseste Moment lag bei ${format(quietest?.value, 1, "dB")}.</p>
+        <p><strong>Die Nacht in Zahlen:</strong> Lautstärke-Peak um ${timeOnly(noisePeak?.time)} Uhr mit ${format(noisePeak?.value, 1, "dB")}, feuchtester Moment um ${timeOnly(humidityPeak?.time)} Uhr mit ${format(humidityPeak?.value, 1, "%")}. Am Schluss: ${format(latestTemp, 1, "°C")}, ${format(latestHumidity, 0, "%")} und ${format(latestNoise, 1, "dB")}.</p>
     `;
 
-    const scrollyChapters = [
-        {
-            key: "temperature_c",
-            accent: "red",
-            title: "17:00 Uhr: Die Türen gehen auf",
-            value: firstTemp?.value,
-            digits: 1,
-            unit: "°C",
-            context: `${timeOnly(firstTemp?.time)} Uhr, ${boxes[firstTemp?.box]?.name || "Raum"}`,
-            body: `Schon beim ersten Messpunkt ist der Raum warm: ${format(firstTemp?.value, 1, "°C")} im ${boxes[firstTemp?.box]?.name || "Raum"}. Noch ist alles geordnet, aber die Kurve läuft bereits.`
-        },
-        {
-            key: "humidity_pct",
-            accent: "blue",
-            title: "21:14 Uhr: Die Luft wird schwer",
-            value: humidityPeak?.value,
-            digits: 1,
-            unit: "%",
-            context: `${timeOnly(humidityPeak?.time)} Uhr, ${boxes[humidityPeak?.box]?.name || "Raum"}`,
-            body: `Der Feuchte-Peak sitzt im Studio: ${format(humidityPeak?.value, 1, "%")}. Das ist der Moment, in dem die Party nicht mehr nur laut, sondern auch spürbar stickig wird.`
-        },
-        {
-            key: "noise_pct",
-            accent: "orange",
-            title: "22:11 Uhr: Jetzt knallt es",
-            value: noisePeak?.value,
-            digits: 1,
-            unit: "dB",
-            context: `${timeOnly(noisePeak?.time)} Uhr, ${boxes[noisePeak?.box]?.name || "Raum"}`,
-            body: `Die lauteste Spitze der Nacht: ${format(noisePeak?.value, 1, "dB")}. Boulevardurteil: Das Studio übernimmt kurz die Schlagzeile.`
-        },
-        {
-            key: "temperature_c",
-            accent: "red",
-            title: "00:52 Uhr: Der heisseste Punkt",
-            value: tempPeak?.value,
-            digits: 1,
-            unit: "°C",
-            context: `${timeOnly(tempPeak?.time)} Uhr, ${boxes[tempPeak?.box]?.name || "Raum"}`,
-            body: `Nach Mitternacht erreicht die Temperatur ihren Peak: ${format(tempPeak?.value, 1, "°C")} in der Mensa. Nicht dramatisch, aber konstant genug für eine klare Story.`
-        },
-        {
-            key: "noise_pct",
-            accent: "orange",
-            title: "03:59 Uhr: Die Nacht klappt zu",
-            value: latestNoisePoint?.value,
-            digits: 1,
-            unit: "dB",
-            context: `${timeOnly(latestNoisePoint?.time)} Uhr, ${boxes[latestNoisePoint?.box]?.name || "Raum"}`,
-            body: `Am Ende stehen nur noch ${format(latestNoise, 1, "dB")} auf dem Ticker. Die Luftfeuchtigkeit bleibt bei ${format(latestHumidity, 0, "%")}, aber der Lärm ist raus.`
-        }
-    ];
-
-    const scrollySteps = document.getElementById("scrolly-steps");
-    const scrollyLabel = document.getElementById("scrolly-label");
-    const scrollyValue = document.getElementById("scrolly-value");
-    const scrollyContext = document.getElementById("scrolly-context");
-    const scrollyChart = document.getElementById("scrolly-chart");
-
-    function renderScrolly(index) {
-        const chapter = scrollyChapters[index];
-        if (!chapter) return;
-        scrollyLabel.textContent = metrics[chapter.key]?.label || "Messwert";
-        scrollyValue.textContent = format(chapter.value, chapter.digits, chapter.unit);
-        scrollyContext.textContent = chapter.context;
-        scrollyChart.className = `scrolly-chart ${chapter.accent}`;
-        scrollyChart.innerHTML = sparkline(valuesFor(chapter.key));
-        document.querySelectorAll(".scrolly-step").forEach((step, stepIndex) => {
-            step.classList.toggle("is-active", stepIndex === index);
+    const lineaCards = document.querySelectorAll(".linea-event");
+    lineaCards.forEach((card) => {
+        card.querySelectorAll("path, circle").forEach((shape) => {
+            const length = Math.ceil(shape.getTotalLength());
+            shape.dataset.drawLength = length;
+            shape.style.setProperty("--draw-length", length);
+            shape.style.strokeDashoffset = length;
         });
-    }
+    });
 
-    scrollySteps.innerHTML = scrollyChapters.map((chapter, index) => `
-        <article class="scrolly-step ${index === 0 ? "is-active" : ""}" data-step="${index}">
-            <span>${String(index + 1).padStart(2, "0")}</span>
-            <h3>${chapter.title}</h3>
-            <p>${chapter.body}</p>
-        </article>
-    `).join("");
+    const cardObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) entry.target.classList.add("is-visible");
+        });
+    }, { threshold: 0.35 });
 
-    renderScrolly(0);
+    lineaCards.forEach((card, index) => {
+        card.style.setProperty("--card-tilt", `${index % 2 === 0 ? -0.25 : 0.35}deg`);
+        card.style.transitionDelay = `${Math.min(index * 70, 280)}ms`;
+        cardObserver.observe(card);
+    });
 
-    const observer = new IntersectionObserver((entries) => {
-        const visible = entries
-            .filter((entry) => entry.isIntersecting)
-            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible) renderScrolly(Number(visible.target.dataset.step));
-    }, { threshold: [0.45, 0.65, 0.85] });
+    const updateTimelineProgress = () => {
+        lineaCards.forEach((card) => {
+            const cardRect = card.getBoundingClientRect();
+            const drawStart = window.innerHeight * 0.82;
+            const drawEnd = window.innerHeight * 0.38;
+            const drawProgress = Math.max(0, Math.min((drawStart - cardRect.top) / Math.max(drawStart - drawEnd, 1), 1));
 
-    document.querySelectorAll(".scrolly-step").forEach((step) => observer.observe(step));
+            card.querySelectorAll("path, circle").forEach((shape) => {
+                const length = Number(shape.dataset.drawLength || 0);
+                shape.style.strokeDashoffset = length * (1 - drawProgress);
+            });
+
+            if (drawProgress >= 0.98) {
+                card.classList.add("is-drawn");
+            } else {
+                card.classList.remove("is-drawn");
+            }
+        });
+    };
+
+    updateTimelineProgress();
+    window.addEventListener("scroll", updateTimelineProgress, { passive: true });
+    window.addEventListener("resize", updateTimelineProgress);
 </script>
 </body>
 </html>
