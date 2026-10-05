@@ -49,16 +49,21 @@ So kann das Projekt gestartet werden:
 
 ## 🐛 Bekannte Probleme
 
-- 
+- Der Alkoholsensor hat keine zuverlässigen Werte geliefert. Diese Messung wurde nach 15 Minuten eingestellt. 
+
 
 ---
 
 ## 📚 Learnings & Herausforderungen
 
 Backend: 
+Neue Arbeiten die wir kennengelernt haben: 
 - Datenbank einrichten
 - Nullen der Sensoren
 - Extrahieren mit PHP
+
+Probleme, die gelöst werden mussten:
+- Die Sensoren waren nicht richtig geeicht, die Einstellung musste kurz vor der Messung an die richtigen Temperaturen angepasst werden.
 
 ---
 
