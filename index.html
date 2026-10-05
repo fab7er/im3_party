@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MIMIP News | Party Hub</title>
+    <title>MMP News | Party Hub</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <main class="paper">
     <header class="masthead">
-        <div class="edition">MIMIP NEWS</div>
+        <div class="edition"><span>MMP</span><mark>NEWS</mark></div>
         <div class="issue">
             <span>Welcome Party HB</span>
             <span>30. Sept 2026</span>
@@ -21,11 +21,17 @@
         <a href="#humidity">Luftfeuchtigkeit</a>
         <a href="#noise">Lautstärke</a>
         <a href="#alcohol">Alkoholpegel</a>
-        <a href="#co2">CO₂</a>
     </nav>
 
+    <div class="news-strip" aria-hidden="true">
+        <span>Breaking News</span>
+        <span>Welcome Party HB</span>
+        <span>Breaking News</span>
+    </div>
+
+    <h1 class="main-title" id="main-title">Brandaktuell</h1>
+
     <section class="hero" aria-labelledby="main-title">
-        <h1 id="main-title">Brandaktuell</h1>
         <p class="lead">Ersti Party eskaliert: heiss und feucht</p>
 
         <div class="scene-grid" aria-label="Stimmungsbilder der Party">
@@ -52,11 +58,26 @@
         </div>
 
         <p class="caption">Laut, heiss, feucht: So entwickelte sich die Atmosphäre über den Abend.</p>
+        <article class="story-copy" id="story-copy" aria-label="Story aus den Messdaten"></article>
     </section>
 
     <section class="overview" aria-labelledby="overview-title">
         <h2 id="overview-title">Das Wichtigste auf einen Blick</h2>
         <div class="metric-grid" id="metric-grid"></div>
+    </section>
+
+    <section class="scrolly" aria-labelledby="scrolly-title">
+        <div class="scrolly-visual" aria-live="polite">
+            <p class="scrolly-kicker">Die Nacht in Daten</p>
+            <h2 id="scrolly-title">Scroll durch die Party</h2>
+            <div class="scrolly-readout">
+                <span id="scrolly-label">Messwert</span>
+                <strong id="scrolly-value">--</strong>
+                <small id="scrolly-context">--</small>
+            </div>
+            <div class="scrolly-chart" id="scrolly-chart" aria-hidden="true"></div>
+        </div>
+        <div class="scrolly-steps" id="scrolly-steps"></div>
     </section>
 
     <footer class="paper-footer">
@@ -71,12 +92,15 @@
         3: { name: "Studio", ids: { temperature_c: "studio-temp", humidity_pct: "studio-humidity", noise_pct: "studio-noise" } },
         7: { name: "Mensa", ids: { temperature_c: "mensa-temp", humidity_pct: "mensa-humidity", noise_pct: "mensa-noise" } }
     };
+    const metrics = {
+        temperature_c: { label: "Temperatur", unit: "°C", accent: "red", digits: 1 },
+        humidity_pct: { label: "Luftfeuchtigkeit", unit: "%", accent: "blue", digits: 0 },
+        noise_pct: { label: "Lautstärke", unit: "dB", accent: "orange", digits: 1 }
+    };
     const metricConfig = [
         { id: "temperature", key: "temperature_c", label: "Temperatur", unit: "°C", accent: "red", digits: 1 },
         { id: "humidity", key: "humidity_pct", label: "Luftfeuchtigkeit", unit: "%", accent: "blue", digits: 0 },
-        { id: "noise", key: "noise_pct", label: "Lautstärke", unit: "dB", accent: "orange", digits: 1 },
-        { id: "alcohol", key: "alcohol_mgl", label: "Alkohol", unit: "mg/l", accent: "violet", digits: 2 },
-        { id: "co2", key: "co2_ppm", label: "CO₂", unit: "ppm", accent: "green", digits: 0 }
+        { id: "noise", key: "noise_pct", label: "Lautstärke", unit: "dB", accent: "orange", digits: 1 }
     ];
 
     function valuesFor(key) {
@@ -90,6 +114,16 @@
             const row = rows[i];
             if (row.box_id === boxId && typeof row[key] === "number") {
                 return row[key];
+            }
+        }
+        return null;
+    }
+
+    function latestMetricValue(key) {
+        for (let i = rows.length - 1; i >= 0; i--) {
+            const value = rows[i][key];
+            if (typeof value === "number" && Number.isFinite(value)) {
+                return value;
             }
         }
         return null;
@@ -109,6 +143,42 @@
         }
         if (!best) return "Keine Daten";
         return `${format(best.value, digits, unit)} (${boxes[best.box]?.name || `Box ${best.box}`})`;
+    }
+
+    function strongestFor(key, direction = "max") {
+        let best = null;
+        for (const row of rows) {
+            const value = row[key];
+            if (typeof value !== "number" || !Number.isFinite(value)) continue;
+            if (!best || (direction === "max" ? value > best.value : value < best.value)) {
+                best = { value, box: row.box_id, time: row.measured_at };
+            }
+        }
+        return best;
+    }
+
+    function timeOnly(dateTime) {
+        return dateTime ? dateTime.slice(11, 16) : "--:--";
+    }
+
+    function firstMetricPoint(key) {
+        for (const row of rows) {
+            const value = row[key];
+            if (typeof value === "number" && Number.isFinite(value)) {
+                return { value, box: row.box_id, time: row.measured_at };
+            }
+        }
+        return null;
+    }
+
+    function latestMetricPoint(key) {
+        for (let i = rows.length - 1; i >= 0; i--) {
+            const value = rows[i][key];
+            if (typeof value === "number" && Number.isFinite(value)) {
+                return { value, box: rows[i].box_id, time: rows[i].measured_at };
+            }
+        }
+        return null;
     }
 
     function sparkline(values) {
@@ -133,14 +203,14 @@
 
     for (const [boxId, box] of Object.entries(boxes)) {
         for (const [key, elementId] of Object.entries(box.ids)) {
-            const config = metricConfig.find((metric) => metric.key === key);
+            const config = metrics[key];
             document.getElementById(elementId).textContent = format(latestFor(Number(boxId), key), config.digits, config.unit);
         }
     }
 
     document.getElementById("metric-grid").innerHTML = metricConfig.map((metric) => {
         const values = valuesFor(metric.key);
-        const latest = values.length ? values[values.length - 1] : null;
+        const latest = latestMetricValue(metric.key);
         return `<article class="metric-card ${metric.accent}" id="${metric.id}">
             <div class="metric-label">${metric.label}</div>
             <strong>${format(latest, metric.digits, metric.unit)}</strong>
@@ -149,6 +219,112 @@
             <small>${peakLabel(metric.key, metric.digits, metric.unit)}<br>Peak</small>
         </article>`;
     }).join("");
+
+    const tempPeak = strongestFor("temperature_c");
+    const humidityPeak = strongestFor("humidity_pct");
+    const noisePeak = strongestFor("noise_pct");
+    const quietest = strongestFor("noise_pct", "min");
+    const latestTemp = latestMetricValue("temperature_c");
+    const latestHumidity = latestMetricValue("humidity_pct");
+    const latestNoise = latestMetricValue("noise_pct");
+    const firstTemp = firstMetricPoint("temperature_c");
+    const latestNoisePoint = latestMetricPoint("noise_pct");
+    document.getElementById("story-copy").innerHTML = `
+        <p><strong>Die Nacht hatte zwei Gesichter:</strong> Erst wurde es laut, dann blieb die Luft hängen. Um ${timeOnly(noisePeak?.time)} Uhr schoss die Lautstärke im ${boxes[noisePeak?.box]?.name || "Raum"} auf ${format(noisePeak?.value, 1, "dB")}.</p>
+        <p>Der Feuchte-Peak kam schon früher: ${format(humidityPeak?.value, 1, "%")} um ${timeOnly(humidityPeak?.time)} Uhr im ${boxes[humidityPeak?.box]?.name || "Raum"}. Heissester Moment: ${format(tempPeak?.value, 1, "°C")} kurz nach ${timeOnly(tempPeak?.time)} Uhr.</p>
+        <p>Zum Schluss war die Party messbar runtergekühlt: ${format(latestTemp, 1, "°C")}, ${format(latestHumidity, 0, "%")} Luftfeuchtigkeit und nur noch ${format(latestNoise, 1, "dB")}. Der leiseste Moment lag bei ${format(quietest?.value, 1, "dB")}.</p>
+    `;
+
+    const scrollyChapters = [
+        {
+            key: "temperature_c",
+            accent: "red",
+            title: "17:00 Uhr: Die Türen gehen auf",
+            value: firstTemp?.value,
+            digits: 1,
+            unit: "°C",
+            context: `${timeOnly(firstTemp?.time)} Uhr, ${boxes[firstTemp?.box]?.name || "Raum"}`,
+            body: `Schon beim ersten Messpunkt ist der Raum warm: ${format(firstTemp?.value, 1, "°C")} im ${boxes[firstTemp?.box]?.name || "Raum"}. Noch ist alles geordnet, aber die Kurve läuft bereits.`
+        },
+        {
+            key: "humidity_pct",
+            accent: "blue",
+            title: "21:14 Uhr: Die Luft wird schwer",
+            value: humidityPeak?.value,
+            digits: 1,
+            unit: "%",
+            context: `${timeOnly(humidityPeak?.time)} Uhr, ${boxes[humidityPeak?.box]?.name || "Raum"}`,
+            body: `Der Feuchte-Peak sitzt im Studio: ${format(humidityPeak?.value, 1, "%")}. Das ist der Moment, in dem die Party nicht mehr nur laut, sondern auch spürbar stickig wird.`
+        },
+        {
+            key: "noise_pct",
+            accent: "orange",
+            title: "22:11 Uhr: Jetzt knallt es",
+            value: noisePeak?.value,
+            digits: 1,
+            unit: "dB",
+            context: `${timeOnly(noisePeak?.time)} Uhr, ${boxes[noisePeak?.box]?.name || "Raum"}`,
+            body: `Die lauteste Spitze der Nacht: ${format(noisePeak?.value, 1, "dB")}. Boulevardurteil: Das Studio übernimmt kurz die Schlagzeile.`
+        },
+        {
+            key: "temperature_c",
+            accent: "red",
+            title: "00:52 Uhr: Der heisseste Punkt",
+            value: tempPeak?.value,
+            digits: 1,
+            unit: "°C",
+            context: `${timeOnly(tempPeak?.time)} Uhr, ${boxes[tempPeak?.box]?.name || "Raum"}`,
+            body: `Nach Mitternacht erreicht die Temperatur ihren Peak: ${format(tempPeak?.value, 1, "°C")} in der Mensa. Nicht dramatisch, aber konstant genug für eine klare Story.`
+        },
+        {
+            key: "noise_pct",
+            accent: "orange",
+            title: "03:59 Uhr: Die Nacht klappt zu",
+            value: latestNoisePoint?.value,
+            digits: 1,
+            unit: "dB",
+            context: `${timeOnly(latestNoisePoint?.time)} Uhr, ${boxes[latestNoisePoint?.box]?.name || "Raum"}`,
+            body: `Am Ende stehen nur noch ${format(latestNoise, 1, "dB")} auf dem Ticker. Die Luftfeuchtigkeit bleibt bei ${format(latestHumidity, 0, "%")}, aber der Lärm ist raus.`
+        }
+    ];
+
+    const scrollySteps = document.getElementById("scrolly-steps");
+    const scrollyLabel = document.getElementById("scrolly-label");
+    const scrollyValue = document.getElementById("scrolly-value");
+    const scrollyContext = document.getElementById("scrolly-context");
+    const scrollyChart = document.getElementById("scrolly-chart");
+
+    function renderScrolly(index) {
+        const chapter = scrollyChapters[index];
+        if (!chapter) return;
+        scrollyLabel.textContent = metrics[chapter.key]?.label || "Messwert";
+        scrollyValue.textContent = format(chapter.value, chapter.digits, chapter.unit);
+        scrollyContext.textContent = chapter.context;
+        scrollyChart.className = `scrolly-chart ${chapter.accent}`;
+        scrollyChart.innerHTML = sparkline(valuesFor(chapter.key));
+        document.querySelectorAll(".scrolly-step").forEach((step, stepIndex) => {
+            step.classList.toggle("is-active", stepIndex === index);
+        });
+    }
+
+    scrollySteps.innerHTML = scrollyChapters.map((chapter, index) => `
+        <article class="scrolly-step ${index === 0 ? "is-active" : ""}" data-step="${index}">
+            <span>${String(index + 1).padStart(2, "0")}</span>
+            <h3>${chapter.title}</h3>
+            <p>${chapter.body}</p>
+        </article>
+    `).join("");
+
+    renderScrolly(0);
+
+    const observer = new IntersectionObserver((entries) => {
+        const visible = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) renderScrolly(Number(visible.target.dataset.step));
+    }, { threshold: [0.45, 0.65, 0.85] });
+
+    document.querySelectorAll(".scrolly-step").forEach((step) => observer.observe(step));
 </script>
 </body>
 </html>
