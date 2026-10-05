@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Luftfeuchtigkeit – Verlauf</title>
+    <style>
+        :root {
+            --bg: #101624;
+            --panel: #172033;
+            --grid: #2a3550;
+            --text: #e8ecf5;
+            --muted: #8d99b5;
+            --mensa: #ffb347;
+            --studio: #4fd1c5;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 24px 16px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Georgia, "Times New Roman", serif;
+        }
+        main { max-width: 1000px; margin: 0 auto; }
+        h1 { font-size: 1.9rem; font-weight: normal; margin: 0 0 4px; }
+        .sub { color: var(--muted); margin: 0 0 20px; font-family: system-ui, sans-serif; font-size: .95rem; }
+        .legend { display: flex; gap: 20px; margin-bottom: 12px; font-family: system-ui, sans-serif; font-size: .95rem; }
+        .legend span::before {
+            content: ""; display: inline-block; width: 22px; height: 4px; border-radius: 2px;
+            margin-right: 8px; vertical-align: middle; background: var(--c);
+        }
+        #chart {
+            position: relative;
+            background: var(--panel);
+            border-radius: 10px;
+            padding: 12px;
+            min-height: 360px;
+        }
+        svg { display: block; width: 100%; height: auto; font-family: system-ui, sans-serif; }
+        .tip {
+            position: absolute; pointer-events: none; display: none;
+            background: #0b101c; border: 1px solid var(--grid); border-radius: 8px;
+            padding: 8px 10px; font: .85rem/1.5 system-ui, sans-serif; white-space: nowrap;
+        }
+        .status { padding: 120px 0; text-align: center; color: var(--muted); font-family: system-ui, sans-serif; }
+        .error { color: #ff8a8a; }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Luftfeuchtigkeit im Verlauf</h1>
+    <p class="sub">30.09.2026, 17:00 bis 01.10.2026, 03:00</p>
+    <div class="legend">
+        <span style="--c: var(--mensa)">Mensa (Box 3)</span>
+        <span style="--c: var(--studio)">Studio (Box 7)</span>
+    </div>
+    <div id="chart"><div class="status">Daten werden geladen …</div></div>
+</main>
+
+<script>
+    const URL_DATA = "https://party.gurulugi.myhostpoint.ch/unload.php?from=2026-09-30%2017:00&to=2026-10-01%2004:00&order=asc&exclude_box=5";
+
+    // Time axis: 17:00 -> 03:00 next day (times are used exactly as stored, no timezone conversion)
+    const T_START = Date.UTC(2026, 8, 30, 17, 0, 0);
+    const T_END   = Date.UTC(2026, 9, 1, 3, 0, 0);
+
+    const SERIES = [
+        { id: 3, name: "Mensa",  color: "#ffb347" },
+        { id: 7, name: "Studio", color: "#4fd1c5" }
+    ];
+
+    const chartEl = document.getElementById("chart");
+    let series = [];
+
+    function parseTime(s) {
+        const m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/.exec(s);
+        return m ? Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]) : null;
+    }
+    const pad = n => String(n).padStart(2, "0");
+    function fmt(t) {
+        const d = new Date(t);
+        return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+    }
+
+    async function load() {
+        try {
+            const res = await fetch(URL_DATA);
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            const json = await res.json();
+            const rows = json.data || [];
+
+            series = SERIES.map(s => ({
+                ...s,
+                points: rows
+                    .filter(r => r.box_id === s.id && r.humidity_pct !== null)
+                    .map(r => ({ t: parseTime(r.measured_at), v: r.humidity_pct }))
+                    .filter(p => p.t !== null && p.t >= T_START && p.t <= T_END)
+            }));
+
+            if (!series.some(s => s.points.length)) {
+                chartEl.innerHTML = '<div class="status">Keine Luftfeuchtigkeits-Daten im Zeitraum gefunden.</div>';
+                return;
+            }
+            draw();
+        } catch (e) {
+            chartEl.innerHTML = `<div class="status error">Fehler beim Laden: ${e.message}</div>`;
+        }
+    }
+
+    function draw() {
+        const W = Math.max(chartEl.clientWidth - 24, 320);
+        const H = Math.round(W < 600 ? W * 0.75 : W * 0.45);
+        const m = { top: 16, right: 16, bottom: 36, left: 48 };
+        const iw = W - m.left - m.right, ih = H - m.top - m.bottom;
+
+        const all = series.flatMap(s => s.points.map(p => p.v));
+        let lo = Math.floor(Math.min(...all) / 5) * 5 - 5;
+        let hi = Math.ceil(Math.max(...all) / 5) * 5 + 5;
+        const x = t => m.left + (t - T_START) / (T_END - T_START) * iw;
+        const y = v => m.top + (1 - (v - lo) / (hi - lo)) * ih;
+
+        let g = "";
+        // horizontal grid + y labels
+        const step = (hi - lo) > 40 ? 10 : 5;
+        for (let v = lo; v <= hi; v += step) {
+            g += `<line x1="${m.left}" x2="${W - m.right}" y1="${y(v)}" y2="${y(v)}" stroke="#2a3550"/>`;
+            g += `<text x="${m.left - 8}" y="${y(v) + 4}" text-anchor="end" fill="#8d99b5" font-size="12">${v}%</text>`;
+        }
+        // hourly x ticks
+        for (let t = T_START; t <= T_END; t += 3600000) {
+            g += `<line x1="${x(t)}" x2="${x(t)}" y1="${m.top}" y2="${H - m.bottom}" stroke="#2a3550" stroke-dasharray="2 4"/>`;
+            g += `<text x="${x(t)}" y="${H - m.bottom + 20}" text-anchor="middle" fill="#8d99b5" font-size="12">${fmt(t)}</text>`;
+        }
+        // lines
+        series.forEach(s => {
+            if (!s.points.length) return;
+            const d = s.points.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
+            g += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+        });
+        g += `<line id="cross" y1="${m.top}" y2="${H - m.bottom}" stroke="#8d99b5" stroke-width="1" style="display:none"/>`;
+        g += `<g id="dots"></g>`;
+
+        chartEl.innerHTML =
+            `<svg id="svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Luftfeuchtigkeit über die Zeit">${g}</svg><div class="tip" id="tip"></div>`;
+
+        const svg = document.getElementById("svg"), cross = document.getElementById("cross"),
+            dots = document.getElementById("dots"), tip = document.getElementById("tip");
+
+        function nearest(s, t) {
+            let best = null;
+            for (const p of s.points) if (!best || Math.abs(p.t - t) < Math.abs(best.t - t)) best = p;
+            return best && Math.abs(best.t - t) <= 15 * 60000 ? best : null;
+        }
+
+        svg.addEventListener("mousemove", ev => {
+            const r = svg.getBoundingClientRect();
+            const px = (ev.clientX - r.left) * (W / r.width);
+            if (px < m.left || px > W - m.right) return hide();
+            const t = T_START + (px - m.left) / iw * (T_END - T_START);
+            cross.setAttribute("x1", px); cross.setAttribute("x2", px); cross.style.display = "";
+            let html = `<b>${fmt(t)} Uhr</b>`, d = "";
+            series.forEach(s => {
+                const p = nearest(s, t);
+                if (!p) return;
+                html += `<br><span style="color:${s.color}">●</span> ${s.name}: ${p.v.toFixed(1)}% <span style="color:#8d99b5">(${fmt(p.t)})</span>`;
+                d += `<circle cx="${x(p.t)}" cy="${y(p.v)}" r="5" fill="${s.color}" stroke="#101624" stroke-width="2"/>`;
+            });
+            dots.innerHTML = d;
+            tip.innerHTML = html;
+            tip.style.display = "block";
+            const left = ev.clientX - chartEl.getBoundingClientRect().left + 14;
+            tip.style.left = Math.min(left, chartEl.clientWidth - tip.offsetWidth - 8) + "px";
+            tip.style.top = (ev.clientY - chartEl.getBoundingClientRect().top - 10) + "px";
+        });
+        svg.addEventListener("mouseleave", hide);
+        function hide() { cross.style.display = "none"; dots.innerHTML = ""; tip.style.display = "none"; }
+    }
+
+    let resizeTimer;
+    window.addEventListener("resize", () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => series.length && draw(), 150);
+    });
+
+    load();
+</script>
+</body>
+</html>
