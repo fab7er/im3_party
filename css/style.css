@@ -1410,31 +1410,12 @@ a {
 
 .alcohol-error-banner {
     grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: center;
-    gap: clamp(16px, 2vw, 28px);
     padding: clamp(16px, 2vw, 28px);
     border: 4px solid var(--rule);
     background:
         repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.09) 0 12px, transparent 12px 24px),
         var(--red);
     color: #fff;
-}
-
-.alcohol-error-banner > span {
-    display: grid;
-    min-width: clamp(104px, 13vw, 160px);
-    min-height: clamp(104px, 13vw, 160px);
-    place-items: center;
-    border: 4px solid #fff;
-    border-radius: 50%;
-    font-family: "Arial Narrow", Impact, Haettenschweiler, "Arial Black", sans-serif;
-    font-size: clamp(1.4rem, 2.7vw, 2.7rem);
-    line-height: 0.9;
-    text-align: center;
-    text-transform: uppercase;
-    transform: rotate(-7deg);
 }
 
 .alcohol-error-banner p {
@@ -1615,14 +1596,7 @@ a {
     }
 
     .alcohol-error-banner {
-        grid-template-columns: 1fr;
         text-align: center;
-    }
-
-    .alcohol-error-banner > span {
-        min-width: 96px;
-        min-height: 96px;
-        margin: 0 auto;
     }
 
     .alcohol-diagnostics {
