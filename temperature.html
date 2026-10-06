@@ -20,23 +20,49 @@
         <a href="temperature.html" aria-current="page">Temperatur</a>
         <a href="humidity.html">Luftfeuchtigkeit</a>
         <a href="noise.html">Lautstärke</a>
-        <a href="index.html#alcohol">Alkoholpegel</a>
+        <a href="alcohol.html">Alkoholpegel</a>
     </nav>
 
     <h1 class="main-title" id="main-title">Temperatur</h1>
 
-    <section class="scrolly temperature-scrolly" aria-labelledby="temperature-scrolly-title">
-        <div class="scrolly-visual" aria-live="polite">
-            <p class="scrolly-kicker">Temperaturverlauf</p>
-            <h2 id="temperature-scrolly-title">Scroll durch die Wärme</h2>
-            <div class="scrolly-readout">
-                <span id="scrolly-label">Temperatur</span>
-                <strong id="scrolly-value">--</strong>
-                <small id="scrolly-context">--</small>
+    <section class="hero temperature-hero" aria-label="Schlagzeile zur Temperatur">
+        <p class="lead">Die Party brachte nicht nur die Tanzfläche zum Glühen</p>
+    </section>
+
+    <section class="temperature-finder" aria-labelledby="temperature-finder-title">
+        <div class="thermometer-panel">
+            <p class="temperature-kicker">Dreh die Hitze auf</p>
+            <h2 id="temperature-finder-title">Wie warm war’s?</h2>
+
+            <div class="thermometer-control">
+                <div class="thermometer-scale" aria-hidden="true">
+                    <span id="scale-max">--</span>
+                    <span id="scale-middle">--</span>
+                    <span id="scale-min">--</span>
+                </div>
+                <div class="thermometer" aria-hidden="true">
+                    <div class="thermometer-tube">
+                        <div class="thermometer-fill" id="thermometer-fill"></div>
+                    </div>
+                    <div class="thermometer-bulb"></div>
+                </div>
+                <input class="temperature-slider" id="temperature-slider" type="range" step="0.1" aria-label="Temperatur auswählen">
             </div>
-            <div class="scrolly-chart red" id="scrolly-chart" aria-hidden="true"></div>
+
+            <output class="temperature-selection" id="temperature-selection" for="temperature-slider">-- °C</output>
+            <p class="temperature-hint">Direkt am Thermometer nach oben oder unten ziehen</p>
         </div>
-        <div class="scrolly-steps" id="scrolly-steps"></div>
+
+        <div class="temperature-result" aria-live="polite">
+            <p class="temperature-kicker">Fundstücke aus der Partynacht</p>
+            <h2>Wann war es so heiss?</h2>
+            <div class="temperature-timeline" id="temperature-timeline">
+                <div class="temperature-timeline-axis" id="temperature-timeline-axis" aria-hidden="true"></div>
+                <div class="temperature-timeline-lanes" id="temperature-timeline-lanes"></div>
+                <div class="temperature-period-tooltip" id="temperature-period-tooltip" hidden></div>
+            </div>
+            <p class="temperature-accuracy" id="temperature-accuracy"></p>
+        </div>
     </section>
 
     <footer class="paper-footer">
@@ -48,117 +74,186 @@
 <script>
     const rows = window.PARTY_UNLOAD_DATA?.data || [];
     const boxes = {
-        3: { name: "Studio" },
-        7: { name: "Mensa" }
+        3: "Studio",
+        7: "Mensa"
     };
+    const points = rows
+        .map((row) => ({
+            value: row.temperature_c,
+            box: row.box_id,
+            time: row.measured_at
+        }))
+        .filter((point) => Number.isFinite(point.value));
 
-    function temperaturePoints() {
-        return rows
-            .map((row) => ({ value: row.temperature_c, box: row.box_id, time: row.measured_at }))
-            .filter((point) => typeof point.value === "number" && Number.isFinite(point.value));
+    const slider = document.getElementById("temperature-slider");
+    const selection = document.getElementById("temperature-selection");
+    const fill = document.getElementById("thermometer-fill");
+    const timeline = document.getElementById("temperature-timeline");
+    const timelineAxis = document.getElementById("temperature-timeline-axis");
+    const timelineLanes = document.getElementById("temperature-timeline-lanes");
+    const periodTooltip = document.getElementById("temperature-period-tooltip");
+    const accuracy = document.getElementById("temperature-accuracy");
+
+    const minTemperature = Math.floor(Math.min(...points.map((point) => point.value)) * 10) / 10;
+    const maxTemperature = Math.ceil(Math.max(...points.map((point) => point.value)) * 10) / 10;
+    const startTemperature = Math.round(((minTemperature + maxTemperature) / 2) * 10) / 10;
+    const timestamp = (point) => Date.parse(point.time.replace(" ", "T"));
+    const timelineStart = points.length ? Math.min(...points.map(timestamp)) : 0;
+    const timelineEnd = points.length ? Math.max(...points.map(timestamp)) : 1;
+    const timelineDuration = Math.max(timelineEnd - timelineStart, 1);
+
+    function formatTemperature(value) {
+        return `${value.toFixed(1)} °C`;
     }
 
-    const points = temperaturePoints();
-    const first = points[0] || null;
-    const last = points[points.length - 1] || null;
-    const peak = points.reduce((best, point) => point.value > best.value ? point : best, points[0]);
-    const low = points.reduce((best, point) => point.value < best.value ? point : best, points[0]);
-    const average = points.reduce((sum, point) => sum + point.value, 0) / points.length;
-
-    function format(value, digits = 1) {
-        if (value === null || value === undefined || Number.isNaN(value)) return "--";
-        return `${value.toFixed(digits)} °C`;
+    function formatTime(time) {
+        const date = new Date(time);
+        return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")} Uhr`;
     }
 
-    function timeOnly(dateTime) {
-        return dateTime ? dateTime.slice(11, 16) : "--:--";
+    function matchingTemperature(selectedTemperature) {
+        return points.reduce((closest, point) =>
+            Math.abs(point.value - selectedTemperature) < Math.abs(closest - selectedTemperature)
+                ? point.value
+                : closest
+        , points[0]?.value ?? selectedTemperature);
     }
 
-    function room(point) {
-        return boxes[point?.box]?.name || "Raum";
-    }
+    function temperaturePeriods(selectedTemperature) {
+        const matchedTemperature = matchingTemperature(selectedTemperature);
+        const periods = [];
 
-    function delta(from, to) {
-        if (!from || !to) return "--";
-        const value = to.value - from.value;
-        return `${value >= 0 ? "+" : ""}${value.toFixed(1)} °C`;
-    }
+        Object.keys(boxes).forEach((boxId) => {
+            const roomPoints = points
+                .filter((point) => point.box === Number(boxId) && Math.abs(point.value - matchedTemperature) < 0.051)
+                .sort((a, b) => timestamp(a) - timestamp(b));
 
-    function sparkline(values) {
-        if (!values.length) return '<div class="sparkline empty" aria-hidden="true"></div>';
-        const sampleSize = 48;
-        const step = Math.max(1, Math.floor(values.length / sampleSize));
-        const sampled = values.filter((_, index) => index % step === 0).slice(-sampleSize);
-        const min = Math.min(...sampled);
-        const max = Math.max(...sampled);
-        const range = Math.max(max - min, 1);
-        const points = sampled.map((value, index) => {
-            const x = sampled.length === 1 ? 50 : (index / (sampled.length - 1)) * 100;
-            const y = 42 - ((value - min) / range) * 30;
-            return `${x.toFixed(1)},${y.toFixed(1)}`;
-        }).join(" ");
-        return `<svg class="sparkline" viewBox="0 0 100 48" preserveAspectRatio="none" aria-hidden="true">
-            <polyline points="${points}" vector-effect="non-scaling-stroke"></polyline>
-        </svg>`;
-    }
-
-    const chapters = [
-        {
-            point: first,
-            title: "17:00 Uhr: Warm gestartet",
-            body: `Der erste Temperaturpunkt liegt bei ${format(first?.value)} in der ${room(first)}. Die Party startet also nicht kalt, sondern bereits im warmen Bereich.`
-        },
-        {
-            point: peak,
-            title: "00:52 Uhr: Der Höchststand",
-            body: `Kurz nach Mitternacht erreicht die Kurve ihren Peak: ${format(peak?.value)} in der ${room(peak)}. Viel höher wird es in dieser Nacht nicht mehr.`
-        },
-        {
-            point: low,
-            title: "02:20 Uhr: Die Luft kühlt ab",
-            body: `Später fällt die Temperatur auf ${format(low?.value)} im ${room(low)}. Gegenüber dem Peak ist das eine Veränderung von ${delta(peak, low)}.`
-        },
-        {
-            point: last,
-            title: "03:59 Uhr: Der Schlussstand",
-            body: `Am Ende steht die Temperatur bei ${format(last?.value)}. Vom ersten bis zum letzten Messpunkt verändert sie sich um ${delta(first, last)}. Durchschnitt der Nacht: ${format(average)}.`
-        }
-    ];
-
-    const scrollySteps = document.getElementById("scrolly-steps");
-    const scrollyValue = document.getElementById("scrolly-value");
-    const scrollyContext = document.getElementById("scrolly-context");
-    const scrollyChart = document.getElementById("scrolly-chart");
-
-    function render(index) {
-        const chapter = chapters[index];
-        if (!chapter) return;
-        scrollyValue.textContent = format(chapter.point?.value);
-        scrollyContext.textContent = `${timeOnly(chapter.point?.time)} Uhr, ${room(chapter.point)}`;
-        scrollyChart.innerHTML = sparkline(points.map((point) => point.value));
-        document.querySelectorAll(".scrolly-step").forEach((step, stepIndex) => {
-            step.classList.toggle("is-active", stepIndex === index);
+            roomPoints.forEach((point) => {
+                const pointTime = timestamp(point);
+                const current = periods[periods.length - 1];
+                if (current && current.box === Number(boxId) && pointTime - current.end <= 150000) {
+                    current.end = pointTime;
+                    current.count += 1;
+                } else {
+                    periods.push({
+                        box: Number(boxId),
+                        value: point.value,
+                        start: pointTime,
+                        end: pointTime,
+                        count: 1
+                    });
+                }
+            });
         });
+
+        return { matchedTemperature, periods };
     }
 
-    scrollySteps.innerHTML = chapters.map((chapter, index) => `
-        <article class="scrolly-step ${index === 0 ? "is-active" : ""}" data-step="${index}">
-            <span>${String(index + 1).padStart(2, "0")}</span>
-            <h3>${chapter.title}</h3>
-            <p>${chapter.body}</p>
-        </article>
-    `).join("");
+    function periodComment(period) {
+        const duration = Math.max(1, Math.round((period.end - period.start) / 60000) + 1);
+        const hour = new Date(period.start).getHours();
+        if (duration >= 10) return "Die Temperatur hat es sich hier richtig gemütlich gemacht – offenbar wollte sie noch nicht nach Hause.";
+        if (hour < 20) return "Frühe Wärmephase: Die Party läuft sich gerade erst warm, nimmt das aber erstaunlich wörtlich.";
+        if (hour >= 0 && hour < 2) return "Mitternachts-Hitze: Vermutlich gleichzeitig Lieblingssong, volle Tanzfläche und null Bereitschaft zum Lüften.";
+        if (period.box === 3) return "Im Studio wurde offenbar engagiert getanzt – oder die Fenster hatten einfach Feierabend.";
+        return "Die Mensa liefert kurz tropische Gefühle, ganz ohne Flugticket und Sonnencreme.";
+    }
 
-    render(0);
+    function renderTimeline(selectedTemperature) {
+        const { matchedTemperature, periods } = temperaturePeriods(selectedTemperature);
+        const periodData = periods.map((period, index) => ({ ...period, index }));
+        const tickCount = 7;
 
-    const observer = new IntersectionObserver((entries) => {
-        const visible = entries
-            .filter((entry) => entry.isIntersecting)
-            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible) render(Number(visible.target.dataset.step));
-    }, { threshold: [0.45, 0.65, 0.85] });
+        timelineAxis.innerHTML = Array.from({ length: tickCount }, (_, index) => {
+            const ratio = index / (tickCount - 1);
+            const time = timelineStart + ratio * timelineDuration;
+            return `<span style="left: ${ratio * 100}%">${formatTime(time).replace(" Uhr", "")}</span>`;
+        }).join("");
 
-    document.querySelectorAll(".scrolly-step").forEach((step) => observer.observe(step));
+        timelineLanes.innerHTML = Object.entries(boxes).map(([boxId, name]) => {
+            const roomPeriods = periodData.filter((period) => period.box === Number(boxId));
+            return `
+                <div class="temperature-timeline-lane">
+                    <strong>${name}</strong>
+                    <div class="temperature-timeline-track">
+                        ${roomPeriods.map((period) => {
+                            const left = Math.min(((period.start - timelineStart) / timelineDuration) * 100, 99.35);
+                            const visibleEnd = Math.min(period.end + 60000, timelineEnd);
+                            const width = Math.min(Math.max(((visibleEnd - period.start) / timelineDuration) * 100, 0.65), 100 - left);
+                            const duration = Math.max(1, Math.round((period.end - period.start) / 60000) + 1);
+                            return `
+                                <button class="temperature-period" style="left: ${left}%; width: ${width}%; --pulse-delay: ${(period.index % 8) * 90}ms" data-period="${period.index}" aria-label="${name}, ${formatTime(period.start)}, ${duration} Minuten"></button>
+                            `;
+                        }).join("")}
+                    </div>
+                </div>
+            `;
+        }).join("");
+
+        const showTooltip = (period, target, event) => {
+            const duration = Math.max(1, Math.round((period.end - period.start) / 60000) + 1);
+            const endTime = period.end > period.start ? `–${formatTime(period.end).replace(" Uhr", "")} Uhr` : "";
+            periodTooltip.innerHTML = `
+                <strong>${formatTime(period.start).replace(" Uhr", "")}${endTime}</strong>
+                <span>${boxes[period.box]} · ca. ${duration} Min.</span>
+                <p>${periodComment(period)}</p>
+            `;
+            periodTooltip.hidden = false;
+            const timelineRect = timeline.getBoundingClientRect();
+            const targetRect = target.getBoundingClientRect();
+            const pointerX = event?.clientX ?? targetRect.left + targetRect.width / 2;
+            const left = Math.max(120, Math.min(pointerX - timelineRect.left, timelineRect.width - 120));
+            periodTooltip.style.left = `${left}px`;
+            periodTooltip.style.top = `${targetRect.top - timelineRect.top - 12}px`;
+        };
+
+        timeline.querySelectorAll(".temperature-period").forEach((element) => {
+            const period = periodData[Number(element.dataset.period)];
+            element.addEventListener("pointerenter", (event) => showTooltip(period, element, event));
+            element.addEventListener("pointermove", (event) => showTooltip(period, element, event));
+            element.addEventListener("pointerleave", () => {
+                periodTooltip.hidden = true;
+            });
+            element.addEventListener("focus", () => showTooltip(period, element));
+            element.addEventListener("blur", () => {
+                periodTooltip.hidden = true;
+            });
+        });
+
+        return {
+            exact: Math.abs(matchedTemperature - selectedTemperature) < 0.051,
+            matchedTemperature,
+            count: periods.length
+        };
+    }
+
+    function renderTemperature() {
+        const selectedTemperature = Number(slider.value);
+        const range = Math.max(maxTemperature - minTemperature, 0.1);
+        const fillPercentage = ((selectedTemperature - minTemperature) / range) * 100;
+        const result = renderTimeline(selectedTemperature);
+
+        selection.value = formatTemperature(selectedTemperature);
+        fill.style.height = `${Math.max(5, fillPercentage)}%`;
+        accuracy.textContent = result.exact
+            ? `${result.count} Zeiträume mit exakt ${formatTemperature(selectedTemperature)} gefunden.`
+            : `Kein exakter Treffer – die Timeline zeigt ${formatTemperature(result.matchedTemperature)}.`;
+    }
+
+    if (points.length) {
+        slider.min = minTemperature;
+        slider.max = maxTemperature;
+        slider.value = startTemperature;
+        document.getElementById("scale-min").textContent = `${minTemperature.toFixed(1)}°`;
+        document.getElementById("scale-middle").textContent = `${startTemperature.toFixed(1)}°`;
+        document.getElementById("scale-max").textContent = `${maxTemperature.toFixed(1)}°`;
+        slider.addEventListener("input", renderTemperature);
+        renderTemperature();
+    } else {
+        slider.disabled = true;
+        timelineLanes.innerHTML = "<p>Keine Temperaturdaten verfügbar.</p>";
+        accuracy.textContent = "Sobald Messwerte vorhanden sind, wird das Thermometer aktiv.";
+    }
 </script>
 </body>
 </html>

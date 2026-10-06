@@ -20,28 +20,47 @@
         <a href="temperature.html">Temperatur</a>
         <a href="humidity.html">Luftfeuchtigkeit</a>
         <a href="noise.html" aria-current="page">Lautstärke</a>
-        <a href="index.html#alcohol">Alkoholpegel</a>
+        <a href="alcohol.html">Alkoholpegel</a>
     </nav>
 
     <h1 class="main-title" id="main-title">Laut</h1>
 
-    <section class="subpage-intro" aria-labelledby="intro-title">
-        <p class="lead" id="intro-title">Ein Peak, dann fällt die Nacht ab</p>
-        <p>Nur die Lautstärke zählt: Diese Story verfolgt, wann die Party akustisch eskaliert und wann sie wieder leiser wird.</p>
+    <section class="hero noise-hero" aria-label="Schlagzeile zur Lautstärke">
+        <p class="lead">Ein Peak, dann fällt die Nacht ab</p>
+        <article class="story-copy" aria-label="Story zur Lautstärke">
+            <p><strong>Der Sound der Nacht:</strong> Zwischen Gesprächen, Musik und voller Tanzfläche zeigt die Lautstärke, wann die Party aufdreht und wann sie kurz Luft holt.</p>
+        </article>
     </section>
 
-    <section class="scrolly noise-scrolly" aria-labelledby="noise-scrolly-title">
-        <div class="scrolly-visual" aria-live="polite">
-            <p class="scrolly-kicker">Lautstärkeverlauf</p>
-            <h2 id="noise-scrolly-title">Scroll durch den Lärm</h2>
-            <div class="scrolly-readout">
-                <span id="scrolly-label">Lautstärke</span>
-                <strong id="scrolly-value">--</strong>
-                <small id="scrolly-context">--</small>
+    <section class="temperature-finder noise-finder" aria-labelledby="noise-finder-title">
+        <div class="volume-panel">
+            <p class="temperature-kicker">Dreh die Party auf</p>
+            <h2 id="noise-finder-title">Wie laut war’s?</h2>
+
+            <div class="volume-control" id="volume-control">
+                <div class="volume-dial" id="volume-dial" aria-hidden="true">
+                    <div class="volume-ticks" id="volume-ticks"></div>
+                    <div class="volume-dial-face">
+                        <span class="volume-pointer"></span>
+                    </div>
+                </div>
+                <input class="volume-slider" id="volume-slider" type="range" step="1" aria-label="Lautstärke auswählen">
             </div>
-            <div class="scrolly-chart orange" id="scrolly-chart" aria-hidden="true"></div>
+
+            <output class="temperature-selection volume-selection" id="volume-selection" for="volume-slider">-- %</output>
+            <p class="temperature-hint">Direkt am runden Regler drehen</p>
         </div>
-        <div class="scrolly-steps" id="scrolly-steps"></div>
+
+        <div class="temperature-result" aria-live="polite">
+            <p class="temperature-kicker">Fundstücke aus der Partynacht</p>
+            <h2>Wann war es so laut?</h2>
+            <div class="temperature-timeline noise-timeline" id="noise-timeline">
+                <div class="temperature-timeline-axis" id="noise-timeline-axis" aria-hidden="true"></div>
+                <div class="temperature-timeline-lanes" id="noise-timeline-lanes"></div>
+                <div class="temperature-period-tooltip noise-period-tooltip" id="noise-period-tooltip" hidden></div>
+            </div>
+            <p class="temperature-accuracy" id="noise-accuracy"></p>
+        </div>
     </section>
 
     <footer class="paper-footer">
@@ -53,117 +72,217 @@
 <script>
     const rows = window.PARTY_UNLOAD_DATA?.data || [];
     const boxes = {
-        3: { name: "Studio" },
-        7: { name: "Mensa" }
+        3: "Studio",
+        7: "Mensa"
     };
+    const points = rows
+        .map((row) => ({
+            value: row.noise_pct,
+            box: row.box_id,
+            time: row.measured_at
+        }))
+        .filter((point) => Number.isFinite(point.value));
 
-    function noisePoints() {
-        return rows
-            .map((row) => ({ value: row.noise_pct, box: row.box_id, time: row.measured_at }))
-            .filter((point) => typeof point.value === "number" && Number.isFinite(point.value));
+    const slider = document.getElementById("volume-slider");
+    const control = document.getElementById("volume-control");
+    const dial = document.getElementById("volume-dial");
+    const tickContainer = document.getElementById("volume-ticks");
+    const selection = document.getElementById("volume-selection");
+    const timeline = document.getElementById("noise-timeline");
+    const timelineAxis = document.getElementById("noise-timeline-axis");
+    const timelineLanes = document.getElementById("noise-timeline-lanes");
+    const periodTooltip = document.getElementById("noise-period-tooltip");
+    const accuracy = document.getElementById("noise-accuracy");
+
+    const minVolume = points.length ? Math.floor(Math.min(...points.map((point) => point.value)) / 5) * 5 : 0;
+    const maxVolume = points.length ? Math.ceil(Math.max(...points.map((point) => point.value)) / 5) * 5 : 100;
+    const startVolume = Math.round((minVolume + maxVolume) / 10) * 5;
+    const timestamp = (point) => Date.parse(point.time.replace(" ", "T"));
+    const timelineStart = points.length ? Math.min(...points.map(timestamp)) : 0;
+    const timelineEnd = points.length ? Math.max(...points.map(timestamp)) : 1;
+    const timelineDuration = Math.max(timelineEnd - timelineStart, 1);
+    const tolerance = 2.5;
+
+    tickContainer.innerHTML = Array.from({ length: 19 }, (_, index) => {
+        const ratio = index / 18;
+        const angle = -135 + ratio * 270;
+        const color = `hsl(${Math.round((1 - ratio) * 120)} 76% 42%)`;
+        return `<span class="volume-tick" style="--tick-angle: ${angle}deg; --tick-color: ${color}"></span>`;
+    }).join("");
+
+    function formatVolume(value) {
+        return `${Math.round(value)} %`;
     }
 
-    const points = noisePoints();
-    const first = points[0] || null;
-    const last = points[points.length - 1] || null;
-    const peak = points.reduce((best, point) => point.value > best.value ? point : best, points[0]);
-    const low = points.reduce((best, point) => point.value < best.value ? point : best, points[0]);
-    const average = points.reduce((sum, point) => sum + point.value, 0) / points.length;
-
-    function format(value, digits = 1) {
-        if (value === null || value === undefined || Number.isNaN(value)) return "--";
-        return `${value.toFixed(digits)} dB`;
+    function formatTime(time) {
+        const date = new Date(time);
+        return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")} Uhr`;
     }
 
-    function timeOnly(dateTime) {
-        return dateTime ? dateTime.slice(11, 16) : "--:--";
-    }
+    function volumePeriods(selectedVolume) {
+        const periods = [];
 
-    function room(point) {
-        return boxes[point?.box]?.name || "Raum";
-    }
+        Object.keys(boxes).forEach((boxId) => {
+            const roomPoints = points
+                .filter((point) => point.box === Number(boxId) && Math.abs(point.value - selectedVolume) <= tolerance)
+                .sort((a, b) => timestamp(a) - timestamp(b));
 
-    function delta(from, to) {
-        if (!from || !to) return "--";
-        const value = to.value - from.value;
-        return `${value >= 0 ? "+" : ""}${value.toFixed(1)} dB`;
-    }
-
-    function sparkline(values) {
-        if (!values.length) return '<div class="sparkline empty" aria-hidden="true"></div>';
-        const sampleSize = 48;
-        const step = Math.max(1, Math.floor(values.length / sampleSize));
-        const sampled = values.filter((_, index) => index % step === 0).slice(-sampleSize);
-        const min = Math.min(...sampled);
-        const max = Math.max(...sampled);
-        const range = Math.max(max - min, 1);
-        const points = sampled.map((value, index) => {
-            const x = sampled.length === 1 ? 50 : (index / (sampled.length - 1)) * 100;
-            const y = 42 - ((value - min) / range) * 30;
-            return `${x.toFixed(1)},${y.toFixed(1)}`;
-        }).join(" ");
-        return `<svg class="sparkline" viewBox="0 0 100 48" preserveAspectRatio="none" aria-hidden="true">
-            <polyline points="${points}" vector-effect="non-scaling-stroke"></polyline>
-        </svg>`;
-    }
-
-    const chapters = [
-        {
-            point: first,
-            title: "17:00 Uhr: Schon hörbar",
-            body: `Der erste Lautstärkewert liegt bei ${format(first?.value)} in der ${room(first)}. Noch kein Peak, aber die Party ist sofort da.`
-        },
-        {
-            point: peak,
-            title: "22:11 Uhr: Der Knall des Abends",
-            body: `Die lauteste Messung kommt aus dem ${room(peak)}: ${format(peak?.value)}. Das ist der klare Höhepunkt der Lärmkurve.`
-        },
-        {
-            point: low,
-            title: "00:48 Uhr: Kurz fast ruhig",
-            body: `Der leiseste Moment liegt bei ${format(low?.value)} im ${room(low)}. Zwischen Peak und Tiefpunkt liegen ${delta(peak, low)}.`
-        },
-        {
-            point: last,
-            title: "03:59 Uhr: Der Ausklang",
-            body: `Am Schluss misst das Studio ${format(last?.value)}. Vom ersten bis zum letzten Messpunkt verändert sich die Lautstärke um ${delta(first, last)}. Durchschnitt der Nacht: ${format(average)}.`
-        }
-    ];
-
-    const scrollySteps = document.getElementById("scrolly-steps");
-    const scrollyValue = document.getElementById("scrolly-value");
-    const scrollyContext = document.getElementById("scrolly-context");
-    const scrollyChart = document.getElementById("scrolly-chart");
-
-    function render(index) {
-        const chapter = chapters[index];
-        if (!chapter) return;
-        scrollyValue.textContent = format(chapter.point?.value);
-        scrollyContext.textContent = `${timeOnly(chapter.point?.time)} Uhr, ${room(chapter.point)}`;
-        scrollyChart.innerHTML = sparkline(points.map((point) => point.value));
-        document.querySelectorAll(".scrolly-step").forEach((step, stepIndex) => {
-            step.classList.toggle("is-active", stepIndex === index);
+            roomPoints.forEach((point) => {
+                const pointTime = timestamp(point);
+                const current = periods[periods.length - 1];
+                if (current && current.box === Number(boxId) && pointTime - current.end <= 150000) {
+                    current.end = pointTime;
+                    current.count += 1;
+                    current.sum += point.value;
+                    current.min = Math.min(current.min, point.value);
+                    current.max = Math.max(current.max, point.value);
+                } else {
+                    periods.push({
+                        box: Number(boxId),
+                        start: pointTime,
+                        end: pointTime,
+                        count: 1,
+                        sum: point.value,
+                        min: point.value,
+                        max: point.value
+                    });
+                }
+            });
         });
+
+        return periods;
     }
 
-    scrollySteps.innerHTML = chapters.map((chapter, index) => `
-        <article class="scrolly-step ${index === 0 ? "is-active" : ""}" data-step="${index}">
-            <span>${String(index + 1).padStart(2, "0")}</span>
-            <h3>${chapter.title}</h3>
-            <p>${chapter.body}</p>
-        </article>
-    `).join("");
+    function periodComment(period) {
+        const average = period.sum / period.count;
+        const duration = Math.max(1, Math.round((period.end - period.start) / 60000) + 1);
+        if (average >= 80) return "Hier hatte die Messbox vermutlich kurz selbst Ohrensausen.";
+        if (average >= 65) return "Volle Tanzfläche: Gespräche funktionieren jetzt hauptsächlich mit Händen und Augenbrauen.";
+        if (duration >= 10) return "Ein erstaunlich stabiler Geräuschteppich – die Party hält den Ton.";
+        if (average < 40) return "Eine kleine Verschnaufpause. Vielleicht lief gerade ein Song, den niemand zugeben wollte zu kennen.";
+        return period.box === 3
+            ? "Im Studio wird hörbar gearbeitet: Beats rein, Ruhe raus."
+            : "Die Mensa meldet sich akustisch – vermutlich mit Stühlen, Stimmen und sehr grossen Geschichten.";
+    }
 
-    render(0);
+    function renderTimeline(selectedVolume) {
+        const periods = volumePeriods(selectedVolume);
+        const periodData = periods.map((period, index) => ({ ...period, index }));
+        const tickCount = 7;
 
-    const observer = new IntersectionObserver((entries) => {
-        const visible = entries
-            .filter((entry) => entry.isIntersecting)
-            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible) render(Number(visible.target.dataset.step));
-    }, { threshold: [0.45, 0.65, 0.85] });
+        timelineAxis.innerHTML = Array.from({ length: tickCount }, (_, index) => {
+            const ratio = index / (tickCount - 1);
+            const time = timelineStart + ratio * timelineDuration;
+            return `<span style="left: ${ratio * 100}%">${formatTime(time).replace(" Uhr", "")}</span>`;
+        }).join("");
 
-    document.querySelectorAll(".scrolly-step").forEach((step) => observer.observe(step));
+        timelineLanes.innerHTML = Object.entries(boxes).map(([boxId, name]) => {
+            const roomPeriods = periodData.filter((period) => period.box === Number(boxId));
+            return `
+                <div class="temperature-timeline-lane">
+                    <strong>${name}</strong>
+                    <div class="temperature-timeline-track">
+                        ${roomPeriods.map((period) => {
+                            const left = Math.min(((period.start - timelineStart) / timelineDuration) * 100, 99.35);
+                            const visibleEnd = Math.min(period.end + 60000, timelineEnd);
+                            const width = Math.min(Math.max(((visibleEnd - period.start) / timelineDuration) * 100, 0.65), 100 - left);
+                            const duration = Math.max(1, Math.round((period.end - period.start) / 60000) + 1);
+                            return `
+                                <button class="temperature-period noise-period" style="left: ${left}%; width: ${width}%; --pulse-delay: ${(period.index % 8) * 90}ms" data-period="${period.index}" aria-label="${name}, ${formatTime(period.start)}, ${duration} Minuten"></button>
+                            `;
+                        }).join("")}
+                    </div>
+                </div>
+            `;
+        }).join("");
+
+        const showTooltip = (period, target, event) => {
+            const duration = Math.max(1, Math.round((period.end - period.start) / 60000) + 1);
+            const average = period.sum / period.count;
+            const endTime = period.end > period.start ? `–${formatTime(period.end).replace(" Uhr", "")} Uhr` : "";
+            periodTooltip.innerHTML = `
+                <strong>${formatTime(period.start).replace(" Uhr", "")}${endTime}</strong>
+                <span>${boxes[period.box]} · ca. ${duration} Min. · Ø ${formatVolume(average)}</span>
+                <p>${periodComment(period)}</p>
+            `;
+            periodTooltip.hidden = false;
+            const timelineRect = timeline.getBoundingClientRect();
+            const targetRect = target.getBoundingClientRect();
+            const pointerX = event?.clientX ?? targetRect.left + targetRect.width / 2;
+            const left = Math.max(120, Math.min(pointerX - timelineRect.left, timelineRect.width - 120));
+            periodTooltip.style.left = `${left}px`;
+            periodTooltip.style.top = `${targetRect.top - timelineRect.top - 12}px`;
+        };
+
+        timeline.querySelectorAll(".noise-period").forEach((element) => {
+            const period = periodData[Number(element.dataset.period)];
+            element.addEventListener("pointerenter", (event) => showTooltip(period, element, event));
+            element.addEventListener("pointermove", (event) => showTooltip(period, element, event));
+            element.addEventListener("pointerleave", () => {
+                periodTooltip.hidden = true;
+            });
+            element.addEventListener("focus", () => showTooltip(period, element));
+            element.addEventListener("blur", () => {
+                periodTooltip.hidden = true;
+            });
+        });
+
+        return periods.length;
+    }
+
+    function renderVolume() {
+        const selectedVolume = Number(slider.value);
+        const ratio = (selectedVolume - minVolume) / Math.max(maxVolume - minVolume, 1);
+        const angle = -135 + ratio * 270;
+        const periodCount = renderTimeline(selectedVolume);
+
+        dial.style.setProperty("--volume-angle", `${angle}deg`);
+        selection.value = formatVolume(selectedVolume);
+        accuracy.textContent = periodCount
+            ? `${periodCount} Lautstärkephasen zwischen ${formatVolume(selectedVolume - tolerance)} und ${formatVolume(selectedVolume + tolerance)} gefunden.`
+            : "Für diesen Bereich wurden keine Lautstärkephasen gefunden.";
+    }
+
+    function setVolumeFromPointer(event) {
+        const rect = control.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        let angle = Math.atan2(event.clientY - centerY, event.clientX - centerX) * 180 / Math.PI + 90;
+        if (angle > 180) angle -= 360;
+        angle = Math.max(-135, Math.min(135, angle));
+        const ratio = (angle + 135) / 270;
+        slider.value = Math.round(minVolume + ratio * (maxVolume - minVolume));
+        renderVolume();
+    }
+
+    if (points.length) {
+        let isDragging = false;
+        slider.min = minVolume;
+        slider.max = maxVolume;
+        slider.value = startVolume;
+        slider.addEventListener("input", renderVolume);
+        control.addEventListener("pointerdown", (event) => {
+            isDragging = true;
+            control.setPointerCapture(event.pointerId);
+            slider.focus();
+            setVolumeFromPointer(event);
+        });
+        control.addEventListener("pointermove", (event) => {
+            if (isDragging) setVolumeFromPointer(event);
+        });
+        control.addEventListener("pointerup", (event) => {
+            isDragging = false;
+            control.releasePointerCapture(event.pointerId);
+        });
+        control.addEventListener("pointercancel", () => {
+            isDragging = false;
+        });
+        renderVolume();
+    } else {
+        slider.disabled = true;
+        timelineLanes.innerHTML = "<p>Keine Lautstärkedaten verfügbar.</p>";
+        accuracy.textContent = "Sobald Messwerte vorhanden sind, wird der Regler aktiv.";
+    }
 </script>
 </body>
 </html>

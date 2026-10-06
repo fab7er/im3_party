@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MMP News | Alkoholpegel</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main class="paper subpage alcohol-page">
+    <header class="masthead">
+        <a class="edition" href="index.html"><span>MMP</span><mark>NEWS</mark></a>
+        <div class="issue">
+            <span>Alkohol Report</span>
+            <span>30. Sept 2026</span>
+        </div>
+    </header>
+
+    <nav class="topic-nav" aria-label="Messwerte">
+        <a href="temperature.html">Temperatur</a>
+        <a href="humidity.html">Luftfeuchtigkeit</a>
+        <a href="noise.html">Lautstärke</a>
+        <a href="alcohol.html" aria-current="page">Alkoholpegel</a>
+    </nav>
+
+    <h1 class="main-title" id="main-title">Alkohol?</h1>
+
+    <section class="alcohol-error" aria-labelledby="alcohol-error-title">
+        <div class="alcohol-error-banner" role="alert">
+            <span>Error 5.42</span>
+            <div>
+                <p>Messung fehlgeschlagen</p>
+                <h2 id="alcohol-error-title">Diese Daten sind leider komplett nüchtern betrachtet unbrauchbar.</h2>
+            </div>
+        </div>
+
+        <figure class="alcohol-photo">
+            <img src="assets/micha-alcohol-error.jpg" alt="Micha testet den Alkoholtester; auf dem Laptop erscheint ein unrealistisch hoher Messwert von 5,42 Promille." width="1800" height="1350">
+            <figcaption>
+                17:00 Uhr – Micha, der Sensor und eine sehr kreative Interpretation der Realität.
+            </figcaption>
+        </figure>
+
+        <article class="alcohol-copy">
+            <p class="alcohol-kicker">Eilmeldung aus dem Messlabor</p>
+            <h2>Micha hatte um 17 Uhr bereits 5 Promille.</h2>
+            <p class="alcohol-punchline">Zumindest behauptet das Gerät 5,42 ‰. Micha konnte noch stehen, sprechen und den Fehler suchen – der Sensor offensichtlich nicht.</p>
+
+            <div class="alcohol-diagnostics" aria-label="Fehlerdiagnose">
+                <div><span>Messwert</span><strong>5,42 ‰</strong></div>
+                <div><span>Plausibilität</span><strong>0 %</strong></div>
+                <div><span>Verdächtiger</span><strong>Der Sensor</strong></div>
+            </div>
+
+            <blockquote>Fazit: Diese Messreihe sagt deutlich mehr über unseren Alkoholtester als über unsere Gäste.</blockquote>
+        </article>
+    </section>
+
+    <footer class="paper-footer">
+        <a href="index.html">Zurück zur Titelseite</a>
+    </footer>
+</main>
+</body>
+</html>
