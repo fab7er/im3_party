@@ -376,6 +376,115 @@ a {
     line-height: 1.1;
 }
 
+.humidity-chart-card {
+    position: relative;
+    min-height: clamp(330px, 42vw, 500px);
+    margin-top: clamp(18px, 2vw, 28px);
+    padding: clamp(10px, 1.4vw, 18px);
+    border: 2px solid var(--rule);
+    background: var(--paper);
+    box-shadow: 7px 7px 0 rgba(22, 21, 19, 0.1);
+}
+
+.humidity-chart-card svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 900 / 340;
+    overflow: visible;
+    cursor: crosshair;
+}
+
+.humidity-chart-grid {
+    stroke: rgba(22, 21, 19, 0.14);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+}
+
+.humidity-chart-line {
+    fill: none;
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+}
+
+.humidity-chart-line-studio {
+    stroke: var(--orange);
+}
+
+.humidity-chart-line-mensa {
+    stroke: var(--magenta);
+}
+
+.humidity-chart-guide {
+    stroke: var(--ink);
+    stroke-dasharray: 5 7;
+    stroke-width: 2;
+    opacity: 0.42;
+    vector-effect: non-scaling-stroke;
+}
+
+.humidity-chart-dot {
+    fill: var(--paper);
+    stroke-width: 4;
+    vector-effect: non-scaling-stroke;
+}
+
+.humidity-chart-dot-studio {
+    stroke: var(--orange);
+}
+
+.humidity-chart-dot-mensa {
+    stroke: var(--magenta);
+}
+
+.humidity-chart-axis,
+.humidity-chart-label,
+.humidity-chart-legend {
+    fill: var(--ink);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    font-weight: 900;
+    transform-box: fill-box;
+    vector-effect: non-scaling-stroke;
+}
+
+.humidity-chart-label {
+    fill: var(--blue);
+}
+
+.humidity-chart-legend.studio {
+    fill: var(--orange);
+}
+
+.humidity-chart-legend.mensa {
+    fill: var(--magenta);
+}
+
+.humidity-tooltip {
+    position: absolute;
+    z-index: 3;
+    min-width: 104px;
+    padding: 8px 10px;
+    border: 2px solid var(--rule);
+    background: var(--paper);
+    box-shadow: 4px 4px 0 rgba(22, 21, 19, 0.14);
+    color: var(--ink);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.78rem;
+    font-weight: 900;
+    line-height: 1.15;
+    pointer-events: none;
+    transform: translate(-50%, calc(-100% - 18px));
+}
+
+.humidity-tooltip strong {
+    display: block;
+    color: var(--blue);
+    font-size: 1.18rem;
+}
+
 .sparkline {
     width: 100%;
     height: 48px;
@@ -536,17 +645,55 @@ a {
     max-width: 860px;
     margin: clamp(18px, 3vw, 42px) auto 0;
     padding: 4px 0 8px;
+    isolation: isolate;
+}
+
+.linea-route {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.linea-route path {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.linea-route-main {
+    stroke: var(--ink);
+    stroke-width: 5px;
+    stroke-dasharray: var(--route-length, 1);
+    stroke-dashoffset: var(--route-length, 1);
+}
+
+.linea-route-dots {
+    display: none;
+}
+
+#humidity-events {
+    display: grid;
+    gap: inherit;
+}
+
+.humidity-page .linea-route-main {
+    stroke: var(--blue);
 }
 
 .linea-event {
     position: relative;
+    z-index: 1;
     display: grid;
     grid-template-columns: minmax(108px, 0.34fr) minmax(0, 1fr);
     align-items: center;
     min-height: 178px;
     padding: clamp(12px, 1.5vw, 18px) 0;
     border: 2px solid var(--rule);
-    background: rgba(244, 241, 232, 0.86);
+    background: var(--paper);
     box-shadow: 0 0 0 rgba(22, 21, 19, 0);
     opacity: 0;
     transform: translateY(28px) rotate(-0.6deg) scale(0.96);
@@ -568,6 +715,12 @@ a {
     height: 132px;
     overflow: visible;
     transform-origin: center;
+}
+
+.linea-event > div {
+    position: relative;
+    min-height: 118px;
+    padding-right: clamp(70px, 9vw, 96px);
 }
 
 .linea-event svg path,
@@ -608,17 +761,66 @@ a {
 }
 
 .linea-event span {
-    display: inline-block;
-    padding-inline: clamp(12px, 1.5vw, 18px);
-    margin-bottom: 6px;
+    position: absolute;
+    top: 10px;
+    right: clamp(12px, 1.5vw, 18px);
+    display: grid;
+    place-items: center;
+    width: clamp(60px, 6.2vw, 76px);
+    aspect-ratio: 1;
+    padding: 0;
+    margin: 0;
+    border: 3px solid var(--magenta);
+    border-radius: 50%;
+    background: var(--paper);
+    box-shadow: 3px 3px 0 rgba(22, 21, 19, 0.12);
     color: var(--magenta);
     font-family: "Arial Narrow", Impact, Haettenschweiler, "Arial Black", sans-serif;
-    font-size: clamp(1rem, 1.4vw, 1.35rem);
+    font-size: clamp(1.18rem, 1.8vw, 1.7rem);
+    font-weight: 900;
     line-height: 1;
+    text-align: center;
+}
+
+.linea-event span::before {
+    position: absolute;
+    left: 50%;
+    top: -22px;
+    width: 18px;
+    height: 10px;
+    border: 3px solid var(--magenta);
+    border-radius: 8px;
+    background: var(--paper);
+    content: "";
+    transform: translateX(-50%);
+}
+
+.humidity-page .linea-event span {
+    border-color: var(--blue);
+    color: var(--blue);
+}
+
+.humidity-page .linea-event span::before {
+    border-color: var(--blue);
+}
+
+.humidity-page .linea-event span::after {
+    background: var(--blue);
+}
+
+.linea-event span::after {
+    position: absolute;
+    left: 50%;
+    top: -10px;
+    width: 6px;
+    height: 7px;
+    background: var(--magenta);
+    content: "";
+    transform: translateX(-50%);
 }
 
 .linea-event h3 {
-    margin: 0 0 4px;
+    margin: 8px 0 4px;
     padding-inline: clamp(12px, 1.5vw, 18px);
     font-family: "Arial Narrow", Impact, Haettenschweiler, "Arial Black", sans-serif;
     font-size: clamp(1.4rem, 2.7vw, 2.8rem);
@@ -746,7 +948,7 @@ a {
 
     .linea-timeline {
         gap: 68px;
-        padding-left: 28px;
+        padding-left: 0;
     }
 
     .linea-event {
@@ -756,6 +958,10 @@ a {
 
     .linea-event svg {
         height: 118px;
+    }
+
+    .linea-event > div {
+        padding-right: 78px;
     }
 
 }

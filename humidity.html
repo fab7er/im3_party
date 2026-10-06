@@ -23,25 +23,30 @@
         <a href="index.html#alcohol">Alkoholpegel</a>
     </nav>
 
-    <h1 class="main-title" id="main-title">Feucht</h1>
+    <h1 class="main-title" id="main-title">Luftfeuchtigkeit</h1>
 
-    <section class="subpage-intro" aria-labelledby="intro-title">
-        <p class="lead" id="intro-title">Die Luft steigt sichtbar an</p>
-        <p>Nur die Luftfeuchtigkeit zählt: Diese Story zeigt, wie sich der Raum im Verlauf der Nacht verändert hat.</p>
+    <section class="hero humidity-hero" aria-labelledby="main-title">
+        <p class="lead">Die Party wurde nicht nur laut, sondern auch tropisch</p>
+        <article class="story-copy" id="humidity-copy" aria-label="Story zur Luftfeuchtigkeit"></article>
     </section>
 
-    <section class="scrolly humidity-scrolly" aria-labelledby="humidity-scrolly-title">
-        <div class="scrolly-visual" aria-live="polite">
-            <p class="scrolly-kicker">Feuchtigkeitsverlauf</p>
-            <h2 id="humidity-scrolly-title">Scroll durch die Luft</h2>
-            <div class="scrolly-readout">
-                <span id="scrolly-label">Luftfeuchtigkeit</span>
-                <strong id="scrolly-value">--</strong>
-                <small id="scrolly-context">--</small>
-            </div>
-            <div class="scrolly-chart blue" id="scrolly-chart" aria-hidden="true"></div>
+    <section class="overview" aria-labelledby="humidity-overview-title">
+        <h2 id="humidity-overview-title">Feuchtigkeitslage</h2>
+        <div class="metric-grid" id="humidity-metrics"></div>
+        <div class="humidity-chart-card" id="humidity-chart-card">
+            <svg id="humidity-chart" viewBox="0 0 900 340" preserveAspectRatio="xMidYMid meet" aria-label="Luftfeuchtigkeit über den Abend"></svg>
+            <div class="humidity-tooltip" id="humidity-tooltip" hidden></div>
         </div>
-        <div class="scrolly-steps" id="scrolly-steps"></div>
+    </section>
+
+    <section class="linea-story humidity-story" aria-labelledby="humidity-story-title">
+        <h2 id="humidity-story-title">Tropfenprotokoll</h2>
+        <div class="linea-timeline humidity-timeline" id="humidity-timeline">
+            <svg class="linea-route" viewBox="0 0 860 1460" preserveAspectRatio="none" aria-hidden="true">
+                <path class="linea-route-main" d="M430 0 C430 92 200 66 200 180 C200 306 675 244 675 380 C675 510 185 446 185 590 C185 734 690 660 690 820 C690 980 205 900 205 1060 C205 1210 430 1200 430 1460" />
+            </svg>
+            <div id="humidity-events"></div>
+        </div>
     </section>
 
     <footer class="paper-footer">
@@ -66,9 +71,10 @@
     const points = humidityPoints();
     const first = points[0] || null;
     const last = points[points.length - 1] || null;
-    const peak = points.reduce((best, point) => point.value > best.value ? point : best, points[0]);
-    const low = points.reduce((best, point) => point.value < best.value ? point : best, points[0]);
-    const average = points.reduce((sum, point) => sum + point.value, 0) / points.length;
+    const peak = points.reduce((best, point) => !best || point.value > best.value ? point : best, null);
+    const low = points.reduce((best, point) => !best || point.value < best.value ? point : best, null);
+    const average = points.length ? points.reduce((sum, point) => sum + point.value, 0) / points.length : null;
+    const middle = points[Math.floor(points.length * 0.52)] || null;
 
     function format(value, digits = 1) {
         if (value === null || value === undefined || Number.isNaN(value)) return "--";
@@ -77,6 +83,11 @@
 
     function timeOnly(dateTime) {
         return dateTime ? dateTime.slice(11, 16) : "--:--";
+    }
+
+    function clockFromTime(time) {
+        const date = new Date(time);
+        return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
     }
 
     function room(point) {
@@ -89,81 +100,254 @@
         return `${value >= 0 ? "+" : ""}${value.toFixed(1)} %`;
     }
 
-    function sparkline(values) {
-        if (!values.length) return '<div class="sparkline empty" aria-hidden="true"></div>';
-        const sampleSize = 48;
-        const step = Math.max(1, Math.floor(values.length / sampleSize));
-        const sampled = values.filter((_, index) => index % step === 0).slice(-sampleSize);
-        const min = Math.min(...sampled);
-        const max = Math.max(...sampled);
-        const range = Math.max(max - min, 1);
-        const points = sampled.map((value, index) => {
-            const x = sampled.length === 1 ? 50 : (index / (sampled.length - 1)) * 100;
-            const y = 42 - ((value - min) / range) * 30;
-            return `${x.toFixed(1)},${y.toFixed(1)}`;
-        }).join(" ");
-        return `<svg class="sparkline" viewBox="0 0 100 48" preserveAspectRatio="none" aria-hidden="true">
-            <polyline points="${points}" vector-effect="non-scaling-stroke"></polyline>
-        </svg>`;
+    function dropIcon(type) {
+        const icons = {
+            first: `
+                <svg viewBox="0 0 140 120" aria-hidden="true">
+                    <path d="M70 23 q24 29 24 48 q0 23 -24 23 q-24 0 -24 -23 q0 -19 24 -48 z" />
+                    <path d="M61 79 q9 7 20 0" />
+                    <circle cx="101" cy="40" r="4" />
+                </svg>`,
+            low: `
+                <svg viewBox="0 0 140 120" aria-hidden="true">
+                    <path d="M48 50 q13 -18 13 -29 q18 22 18 38 q0 17 -18 17 q-17 0 -17 -16 q0 -5 4 -10 z" />
+                    <path d="M92 76 q13 -18 13 -29 q18 22 18 38 q0 17 -18 17 q-17 0 -17 -16 q0 -5 4 -10 z" />
+                    <path d="M32 96 q18 8 38 0 M82 104 q24 8 43 -2" />
+                </svg>`,
+            middle: `
+                <svg viewBox="0 0 140 120" aria-hidden="true">
+                    <path d="M38 38 q18 20 18 35 q0 17 -18 17 q-18 0 -18 -17 q0 -15 18 -35 z" />
+                    <path d="M72 22 q24 28 24 48 q0 23 -24 23 q-24 0 -24 -23 q0 -20 24 -48 z" />
+                    <path d="M106 48 q14 17 14 29 q0 14 -14 14 q-14 0 -14 -14 q0 -12 14 -29 z" />
+                </svg>`,
+            peak: `
+                <svg viewBox="0 0 140 120" aria-hidden="true">
+                    <path d="M70 18 q32 38 32 64 q0 30 -32 30 q-32 0 -32 -30 q0 -26 32 -64 z" />
+                    <path d="M56 82 q14 13 31 0" />
+                    <path d="M31 44 q-10 8 -11 21 M109 44 q10 8 11 21 M42 25 l-12 -12 M99 25 l12 -12" />
+                </svg>`,
+            last: `
+                <svg viewBox="0 0 140 120" aria-hidden="true">
+                    <path d="M48 39 q20 24 20 41 q0 20 -20 20 q-20 0 -20 -20 q0 -17 20 -41 z" />
+                    <path d="M90 28 q24 28 24 48 q0 23 -24 23 q-24 0 -24 -23 q0 -20 24 -48 z" />
+                    <path d="M32 105 q34 -10 74 0 M72 86 q8 8 20 0" />
+                </svg>`
+        };
+        return icons[type];
     }
 
     const chapters = [
         {
+            type: "first",
             point: first,
-            title: "17:00 Uhr: Noch trocken genug",
-            body: `Der erste Feuchtigkeitswert liegt bei ${format(first?.value)} in der ${room(first)}. Die Nacht startet kontrolliert.`
+            title: "Noch atmet der Raum",
+            body: `Der erste Wert liegt bei ${format(first?.value, 0)} in der ${room(first)}. Die Luft wirkt noch harmlos, fast unschuldig.`
         },
         {
+            type: "low",
             point: low,
-            title: "17:18 Uhr: Der tiefste Punkt",
-            body: `Kurz nach Beginn fällt die Luftfeuchtigkeit auf ${format(low?.value)} in der ${room(low)}. Danach geht die Kurve schrittweise nach oben.`
+            title: "Kurzer Trocken-Moment",
+            body: `Der tiefste Punkt kommt um ${timeOnly(low?.time)} Uhr mit ${format(low?.value, 0)}. Danach beginnt die Luft langsam mitzumachen.`
         },
         {
+            type: "middle",
+            point: middle,
+            title: "Tropfen sammeln sich",
+            body: `Um ${timeOnly(middle?.time)} Uhr steht die Feuchtigkeit bei ${format(middle?.value, 0)}. Gespräche, Tanzfläche und Raumluft bilden ein kleines Wetter.`
+        },
+        {
+            type: "peak",
             point: peak,
-            title: "21:14 Uhr: Die Luft hängt",
-            body: `Der Peak kommt im Studio: ${format(peak?.value)}. Das ist der feuchteste Moment der Messreihe.`
+            title: "Der feuchteste Moment",
+            body: `Peak um ${timeOnly(peak?.time)} Uhr: ${format(peak?.value, 0)} in der ${room(peak)}. Ab hier ist die Luft offiziell Teil der Party.`
         },
         {
+            type: "last",
             point: last,
-            title: "03:59 Uhr: Feucht bleibt es",
-            body: `Am Schluss stehen ${format(last?.value)} im ${room(last)}. Vom ersten bis zum letzten Messpunkt steigt die Luftfeuchtigkeit um ${delta(first, last)}. Durchschnitt der Nacht: ${format(average)}.`
+            title: "Der Raum bleibt wach",
+            body: `Zum Schluss bleiben ${format(last?.value, 0)}. Insgesamt: ${delta(first, last)} seit Beginn, Durchschnitt ${format(average, 0)}.`
         }
     ];
 
-    const scrollySteps = document.getElementById("scrolly-steps");
-    const scrollyValue = document.getElementById("scrolly-value");
-    const scrollyContext = document.getElementById("scrolly-context");
-    const scrollyChart = document.getElementById("scrolly-chart");
+    document.getElementById("humidity-copy").innerHTML = `
+        <p><strong>Die Nacht in Tropfen:</strong> Von ${format(first?.value, 0)} auf ${format(last?.value, 0)}, mit einem Peak von ${format(peak?.value, 0)} um ${timeOnly(peak?.time)} Uhr. Die Party hat sich langsam in ein eigenes Mikroklima verwandelt.</p>
+    `;
 
-    function render(index) {
-        const chapter = chapters[index];
-        if (!chapter) return;
-        scrollyValue.textContent = format(chapter.point?.value);
-        scrollyContext.textContent = `${timeOnly(chapter.point?.time)} Uhr, ${room(chapter.point)}`;
-        scrollyChart.innerHTML = sparkline(points.map((point) => point.value));
-        document.querySelectorAll(".scrolly-step").forEach((step, stepIndex) => {
-            step.classList.toggle("is-active", stepIndex === index);
-        });
-    }
-
-    scrollySteps.innerHTML = chapters.map((chapter, index) => `
-        <article class="scrolly-step ${index === 0 ? "is-active" : ""}" data-step="${index}">
-            <span>${String(index + 1).padStart(2, "0")}</span>
-            <h3>${chapter.title}</h3>
-            <p>${chapter.body}</p>
+    document.getElementById("humidity-metrics").innerHTML = [
+        { label: "Start", value: format(first?.value, 0), note: `${timeOnly(first?.time)} Uhr` },
+        { label: "Peak", value: format(peak?.value, 0), note: `${timeOnly(peak?.time)} Uhr, ${room(peak)}` },
+        { label: "Veränderung", value: delta(first, last), note: "vom ersten bis letzten Messpunkt" }
+    ].map((metric) => `
+        <article class="metric-card blue">
+            <div class="metric-label">${metric.label}</div>
+            <strong>${metric.value}</strong>
+            <span class="metric-note">${metric.note}</span>
         </article>
     `).join("");
 
-    render(0);
+    function renderHumidityChart() {
+        const svg = document.getElementById("humidity-chart");
+        const tooltip = document.getElementById("humidity-tooltip");
+        if (!svg || !tooltip || !points.length) return;
 
-    const observer = new IntersectionObserver((entries) => {
-        const visible = entries
-            .filter((entry) => entry.isIntersecting)
-            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible) render(Number(visible.target.dataset.step));
+        const width = 900;
+        const height = 340;
+        const pad = { top: 34, right: 30, bottom: 48, left: 54 };
+        const chartWidth = width - pad.left - pad.right;
+        const chartHeight = height - pad.top - pad.bottom;
+        const series = {
+            3: points.filter((point) => point.box === 3).sort((a, b) => Date.parse(a.time.replace(" ", "T")) - Date.parse(b.time.replace(" ", "T"))),
+            7: points.filter((point) => point.box === 7).sort((a, b) => Date.parse(a.time.replace(" ", "T")) - Date.parse(b.time.replace(" ", "T")))
+        };
+        const times = points.map((point) => Date.parse(point.time.replace(" ", "T")));
+        const minTime = Math.min(...times);
+        const maxTime = Math.max(...times);
+        const minValue = Math.floor(Math.min(...points.map((point) => point.value)) - 2);
+        const maxValue = Math.ceil(Math.max(...points.map((point) => point.value)) + 2);
+        const lastStudio = series[3][series[3].length - 1] || last;
+        const lastMensa = series[7][series[7].length - 1] || last;
+        const valueRange = Math.max(maxValue - minValue, 1);
+        const xForTime = (time) => pad.left + ((time - minTime) / Math.max(maxTime - minTime, 1)) * chartWidth;
+        const yFor = (value) => pad.top + (1 - (value - minValue) / valueRange) * chartHeight;
+        const lineFor = (items) => items.map((point) => {
+            const time = Date.parse(point.time.replace(" ", "T"));
+            return `${xForTime(time).toFixed(1)},${yFor(point.value).toFixed(1)}`;
+        }).join(" ");
+        const nearest = (items, targetTime) => items.reduce((best, point) => {
+            const distance = Math.abs(Date.parse(point.time.replace(" ", "T")) - targetTime);
+            return !best || distance < best.distance ? { point, distance } : best;
+        }, null)?.point || null;
+        const guideValues = [minValue, Math.round((minValue + maxValue) / 2), maxValue];
+
+        svg.innerHTML = `
+            ${guideValues.map((value) => `
+                <line class="humidity-chart-grid" x1="${pad.left}" x2="${width - pad.right}" y1="${yFor(value)}" y2="${yFor(value)}"></line>
+                <text class="humidity-chart-axis" x="10" y="${yFor(value) + 4}">${value}%</text>
+            `).join("")}
+            <polyline class="humidity-chart-line humidity-chart-line-studio" points="${lineFor(series[3])}"></polyline>
+            <polyline class="humidity-chart-line humidity-chart-line-mensa" points="${lineFor(series[7])}"></polyline>
+            <line class="humidity-chart-grid" x1="${pad.left}" x2="${pad.left}" y1="${pad.top}" y2="${height - pad.bottom}"></line>
+            <line class="humidity-chart-grid" x1="${pad.left}" x2="${width - pad.right}" y1="${height - pad.bottom}" y2="${height - pad.bottom}"></line>
+            <line class="humidity-chart-guide" id="humidity-chart-guide" x1="${width - pad.right}" x2="${width - pad.right}" y1="${pad.top}" y2="${height - pad.bottom}"></line>
+            <text class="humidity-chart-label" x="${pad.left}" y="${height - 10}">${timeOnly(first?.time)}</text>
+            <text class="humidity-chart-label" x="${width - pad.right - 40}" y="${height - 10}">${timeOnly(last?.time)}</text>
+            <text class="humidity-chart-legend studio" x="${pad.left + 8}" y="18">Studio</text>
+            <text class="humidity-chart-legend mensa" x="${pad.left + 76}" y="18">Mensa</text>
+            <circle class="humidity-chart-dot humidity-chart-dot-studio" id="humidity-chart-dot-studio" cx="${xForTime(Date.parse(lastStudio.time.replace(" ", "T")))}" cy="${yFor(lastStudio.value)}" r="6"></circle>
+            <circle class="humidity-chart-dot humidity-chart-dot-mensa" id="humidity-chart-dot-mensa" cx="${xForTime(Date.parse(lastMensa.time.replace(" ", "T")))}" cy="${yFor(lastMensa.value)}" r="6"></circle>
+        `;
+
+        const guide = document.getElementById("humidity-chart-guide");
+        const studioDot = document.getElementById("humidity-chart-dot-studio");
+        const mensaDot = document.getElementById("humidity-chart-dot-mensa");
+        const showPoint = (event) => {
+            const rect = svg.getBoundingClientRect();
+            const ratio = Math.max(0, Math.min((event.clientX - rect.left) / Math.max(rect.width, 1), 1));
+            const targetTime = minTime + ratio * (maxTime - minTime);
+            const studio = nearest(series[3], targetTime);
+            const mensa = nearest(series[7], targetTime);
+            const x = xForTime(targetTime);
+            const xPercent = (x / width) * 100;
+
+            guide.setAttribute("x1", x);
+            guide.setAttribute("x2", x);
+            if (studio) {
+                studioDot.setAttribute("cx", x);
+                studioDot.setAttribute("cy", yFor(studio.value));
+            }
+            if (mensa) {
+                mensaDot.setAttribute("cx", x);
+                mensaDot.setAttribute("cy", yFor(mensa.value));
+            }
+
+            tooltip.hidden = false;
+            tooltip.innerHTML = `<strong>${clockFromTime(targetTime)} Uhr</strong>Studio: ${format(studio?.value, 0)}<br>Mensa: ${format(mensa?.value, 0)}`;
+            tooltip.style.left = `${Math.max(8, Math.min(xPercent, 92))}%`;
+            tooltip.style.top = "34%";
+        };
+
+        svg.addEventListener("pointermove", showPoint);
+        svg.addEventListener("pointerleave", () => {
+            tooltip.hidden = true;
+        });
+    }
+
+    renderHumidityChart();
+
+    document.getElementById("humidity-events").innerHTML = chapters.map((chapter) => `
+        <article class="linea-event">
+            ${dropIcon(chapter.type)}
+            <div>
+                <span>${timeOnly(chapter.point?.time)}</span>
+                <h3>${chapter.title}</h3>
+                <p>${chapter.body}</p>
+            </div>
+        </article>
+    `).join("");
+
+    const lineaCards = document.querySelectorAll(".linea-event");
+    const timeline = document.querySelector(".linea-timeline");
+    const routePaths = document.querySelectorAll(".linea-route-main");
+
+    routePaths.forEach((path) => {
+        const length = Math.ceil(path.getTotalLength());
+        path.dataset.routeLength = length;
+        path.style.setProperty("--route-length", length);
+        path.style.strokeDashoffset = length;
+    });
+
+    lineaCards.forEach((card) => {
+        card.querySelectorAll("path, circle").forEach((shape) => {
+            const length = Math.ceil(shape.getTotalLength());
+            shape.dataset.drawLength = length;
+            shape.style.setProperty("--draw-length", length);
+            shape.style.strokeDashoffset = length;
+        });
+    });
+
+    const cardObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) entry.target.classList.add("is-visible");
+        });
     }, { threshold: [0.45, 0.65, 0.85] });
 
-    document.querySelectorAll(".scrolly-step").forEach((step) => observer.observe(step));
+    lineaCards.forEach((card, index) => {
+        card.style.setProperty("--card-tilt", `${index % 2 === 0 ? -0.25 : 0.35}deg`);
+        card.style.transitionDelay = `${Math.min(index * 70, 280)}ms`;
+        cardObserver.observe(card);
+    });
+
+    const updateTimelineProgress = () => {
+        if (timeline) {
+            const timelineRect = timeline.getBoundingClientRect();
+            const routeStart = window.innerHeight * 0.78;
+            const routeEnd = window.innerHeight * 0.22;
+            const routeProgress = Math.max(0, Math.min((routeStart - timelineRect.top) / Math.max(timelineRect.height - routeEnd, 1), 1));
+
+            routePaths.forEach((path) => {
+                const length = Number(path.dataset.routeLength || 0);
+                path.style.strokeDashoffset = length * (1 - routeProgress);
+            });
+        }
+
+        lineaCards.forEach((card) => {
+            const cardRect = card.getBoundingClientRect();
+            const drawStart = window.innerHeight * 0.82;
+            const drawEnd = window.innerHeight * 0.38;
+            const drawProgress = Math.max(0, Math.min((drawStart - cardRect.top) / Math.max(drawStart - drawEnd, 1), 1));
+
+            card.querySelectorAll("path, circle").forEach((shape) => {
+                const length = Number(shape.dataset.drawLength || 0);
+                shape.style.strokeDashoffset = length * (1 - drawProgress);
+            });
+
+            card.classList.toggle("is-drawn", drawProgress >= 0.98);
+        });
+    };
+
+    updateTimelineProgress();
+    window.addEventListener("scroll", updateTimelineProgress, { passive: true });
+    window.addEventListener("resize", updateTimelineProgress);
 </script>
 </body>
 </html>

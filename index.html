@@ -11,7 +11,7 @@
     <header class="masthead">
         <a class="edition" href="index.html"><span>MMP</span><mark>NEWS</mark></a>
         <div class="issue">
-            <span>Welcome Party HB</span>
+            <span>Welcome Party H8</span>
             <span>30. Sept 2026</span>
         </div>
     </header>
@@ -25,7 +25,7 @@
 
     <div class="news-strip" aria-hidden="true">
         <span>Breaking News</span>
-        <span>Welcome Party HB</span>
+        <span>Welcome Party H8</span>
         <span>Breaking News</span>
     </div>
 
@@ -56,9 +56,9 @@
             </svg>
             <article class="linea-event">
                 <svg viewBox="0 0 140 120" aria-hidden="true">
-                    <path d="M34 100 V24 h48 v76 M47 100 V40 h23 v60 M64 68 h2" />
-                    <path d="M96 100 q-9 -19 0 -38 M91 62 q10 -13 22 0 M100 61 q5 17 -2 39 M89 100 h25 M99 50 a7 7 0 1 0 0 -14 a7 7 0 1 0 0 14" />
-                    <path d="M48 88 q10 -8 20 0" />
+                    <path d="M36 98 V28 h42 v70" />
+                    <circle cx="67" cy="63" r="2.5" />
+                    <path d="M101 76 q-5 -9 2 -16 M96 60 q8 -12 18 0 M104 48 a7 7 0 1 0 0 -14 a7 7 0 1 0 0 14 M101 76 l-14 22 M101 76 l20 22" />
                 </svg>
                 <div>
                     <span>17:00</span>
@@ -68,9 +68,9 @@
             </article>
             <article class="linea-event">
                 <svg viewBox="0 0 140 120" aria-hidden="true">
-                    <path d="M42 34 l22 12 l-16 35 q-7 15 -21 9 q-14 -7 -7 -22 z M23 91 h34" />
-                    <path d="M98 34 l-22 12 l16 35 q7 15 21 9 q14 -7 7 -22 z M83 91 h34" />
-                    <path d="M58 46 q12 12 24 0 M48 58 q22 16 44 0" />
+                    <path d="M43 30 q23 6 27 12 q-2 34 -23 44 q-21 -10 -18 -36 q4 -14 14 -20 z M31 63 q15 -5 35 1 M47 86 q-5 18 -13 27 M22 114 q12 -7 24 1" />
+                    <path d="M97 30 q-23 6 -27 12 q2 34 23 44 q21 -10 18 -36 q-4 -14 -14 -20 z M74 63 q15 -5 35 1 M93 86 q5 18 13 27 M94 115 q12 -8 24 -1" />
+                    <path d="M61 27 q-19 -18 -25 -9 M76 27 q19 -18 25 -9 M70 25 a3 3 0 1 0 0 -6 a3 3 0 1 0 0 6 M55 35 a3 3 0 1 0 0 -6 a3 3 0 1 0 0 6 M86 35 a3 3 0 1 0 0 -6 a3 3 0 1 0 0 6" />
                 </svg>
                 <div>
                     <span>18:30</span>
@@ -80,9 +80,10 @@
             </article>
             <article class="linea-event">
                 <svg viewBox="0 0 140 120" aria-hidden="true">
-                    <path d="M46 38 h44 l-12 31 q-6 15 -20 15 q-14 0 -20 -15 z" />
-                    <path d="M62 84 l-7 18 M74 84 l9 18 M49 102 h40" />
-                    <path d="M86 39 l16 -16 M96 57 l24 -5 M37 91 l-20 12 M95 91 l21 11 M56 55 l-17 -15 M68 39 l-4 -23" />
+                    <path d="M42 33 h55 l-18 28 q-8 11 -23 8 q-13 -3 -18 -18 z" />
+                    <path d="M61 67 l-18 28 M76 64 l15 31 M34 96 q31 -8 66 0" />
+                    <path d="M58 47 l-15 -12 M73 34 l-6 -16 M91 41 l18 -12 M82 56 l24 8 M48 61 l-19 16" />
+                    <path d="M27 101 q20 8 39 2 q22 -7 47 2 M52 93 q5 -5 11 -1 M84 91 q7 -4 14 1" />
                 </svg>
                 <div>
                     <span>19:20</span>
@@ -207,6 +208,15 @@
     `;
 
     const lineaCards = document.querySelectorAll(".linea-event");
+    const timeline = document.querySelector(".linea-timeline");
+    const routePaths = document.querySelectorAll(".linea-route-main");
+    routePaths.forEach((path) => {
+        const length = Math.ceil(path.getTotalLength());
+        path.dataset.routeLength = length;
+        path.style.setProperty("--route-length", length);
+        path.style.strokeDashoffset = length;
+    });
+
     lineaCards.forEach((card) => {
         card.querySelectorAll("path, circle").forEach((shape) => {
             const length = Math.ceil(shape.getTotalLength());
@@ -229,6 +239,18 @@
     });
 
     const updateTimelineProgress = () => {
+        if (timeline) {
+            const timelineRect = timeline.getBoundingClientRect();
+            const routeStart = window.innerHeight * 0.78;
+            const routeEnd = window.innerHeight * 0.22;
+            const routeProgress = Math.max(0, Math.min((routeStart - timelineRect.top) / Math.max(timelineRect.height - routeEnd, 1), 1));
+
+            routePaths.forEach((path) => {
+                const length = Number(path.dataset.routeLength || 0);
+                path.style.strokeDashoffset = length * (1 - routeProgress);
+            });
+        }
+
         lineaCards.forEach((card) => {
             const cardRect = card.getBoundingClientRect();
             const drawStart = window.innerHeight * 0.82;
